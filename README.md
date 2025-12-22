@@ -77,20 +77,54 @@ This will:
 - Publish the views.
 - Run `php artisan migrate`.
 
-3. **Authorize access**
+3. **Authorize access (restricting the dashboard URL)**
 
-Protect the dashboard using the `viewQueueMonitor` ability. For example, in `App\Providers\AuthServiceProvider`:
+This package **only** protects its own routes (those under `/queue-monitor` by default) using a route middleware alias called `queue-monitor`. Your existing application routes are never wrapped by this middleware.
+
+To control who can access the dashboard, define the `viewQueueMonitor` ability.  
+You can do this either in your existing `App\Providers\AuthServiceProvider`, or (recommended) in a **dedicated provider** so the queue monitor logic stays separate.
+
+Example dedicated provider (recommended):
 
 ```php
+// app/Providers/QueueMonitorAuthServiceProvider.php
+
+namespace App\Providers;
+
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
-public function boot(): void
+class QueueMonitorAuthServiceProvider extends ServiceProvider
 {
-    Gate::define('viewQueueMonitor', fn ($user) => $user->is_admin);
+    public function boot(): void
+    {
+        // Only admins can view the queue monitor dashboard
+        Gate::define('viewQueueMonitor', fn ($user) => $user->is_admin);
+    }
 }
 ```
 
-Any user who passes this gate (or an equivalent policy/role check) will be able to access the dashboard routes.
+Then register this provider in your `config/app.php` under `providers`:
+
+```php
+'providers' => [
+    // ...
+    App\Providers\QueueMonitorAuthServiceProvider::class,
+],
+```
+
+How it works:
+
+- The package routes are grouped with middleware: `['web', 'auth', 'queue-monitor']`.
+- The `queue-monitor` middleware checks `auth()->user()->can('viewQueueMonitor')`.
+- If the ability returns `false`, only the `/queue-monitor` URLs return **403 Forbidden**.
+- Your other application URLs are not affected by this package.
+
+If you want to make the dashboard public (for example, in a locked-down internal network), you can simply allow all users:
+
+```php
+Gate::define('viewQueueMonitor', fn ($user) => true);
+```
 
 If you prefer to do each step manually instead of using `queue-monitor:install`, you can still run:
 

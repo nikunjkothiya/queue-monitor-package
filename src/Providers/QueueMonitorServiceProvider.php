@@ -2,7 +2,6 @@
 
 namespace NikunjKothiya\QueueMonitor\Providers;
 
-use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Support\Facades\Event;
@@ -21,7 +20,7 @@ class QueueMonitorServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../../config/queue-monitor.php', 'queue-monitor');
     }
 
-    public function boot(Kernel $kernel): void
+    public function boot(): void
     {
         if (! config('queue-monitor.enabled')) {
             return;
@@ -32,8 +31,7 @@ class QueueMonitorServiceProvider extends ServiceProvider
         $this->registerMigrations();
         $this->registerCommands();
         $this->registerListeners();
-
-        $kernel->pushMiddleware(AuthorizeQueueMonitor::class);
+        $this->registerMiddleware();
 
         $this->publishes([
             __DIR__ . '/../../config/queue-monitor.php' => config_path('queue-monitor.php'),
@@ -78,6 +76,14 @@ class QueueMonitorServiceProvider extends ServiceProvider
     {
         Event::listen(JobFailed::class, [JobFailedListener::class, 'handle']);
         Event::listen(JobProcessed::class, [JobProcessedListener::class, 'handle']);
+    }
+
+    protected function registerMiddleware(): void
+    {
+        $router = $this->app['router'];
+
+        // Register a route middleware alias used only by this package's routes.
+        $router->aliasMiddleware('queue-monitor', AuthorizeQueueMonitor::class);
     }
 }
 
