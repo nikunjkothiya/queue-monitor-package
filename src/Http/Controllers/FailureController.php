@@ -1,0 +1,103 @@
+<?php
+
+namespace NikunjKothiya\QueueMonitor\Http\Controllers;
+
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Bus;
+use NikunjKothiya\QueueMonitor\Models\QueueFailure;
+use NikunjKothiya\QueueMonitor\Http\Requests\BulkResolveFailuresRequest;
+use NikunjKothiya\QueueMonitor\Http\Requests\ClearFailuresRequest;
+use NikunjKothiya\QueueMonitor\Http\Requests\ResolveFailureRequest;
+use Illuminate\Http\Request;
+
+class FailureController extends Controller
+{
+    public function index(Request $request)
+    {
+        $query = QueueFailure::query()->latest('failed_at');
+
+        if ($request->boolean('unresolved')) {
+            $query->unresolved();
+        }
+
+        $failures = $query->paginate(25);
+
+        return view('queue-monitor::failures.index', [
+            'failures' => $failures,
+        ]);
+    }
+
+    public function show(QueueFailure $failure)
+    {
+        return view('queue-monitor::failures.show', [
+            'failure' => $failure,
+        ]);
+    }
+
+    public function retry(QueueFailure $failure): RedirectResponse
+    {
+        if (! $failure->payload) {
+            return back()->with('queue-monitor.error', 'Cannot retry: missing payload.');
+        }
+
+        $job = $this->reconstructJobFromPayload($failure->payload);
+
+        if (! $job) {
+            return back()->with('queue-monitor.error', 'Unable to reconstruct job from payload.');
+        }
+
+        Bus::dispatch($job);
+
+        return back()->with('queue-monitor.success', 'Job has been re-dispatched.');
+    }
+
+    public function resolve(ResolveFailureRequest $request, QueueFailure $failure): RedirectResponse
+    {
+        $failure->forceFill([
+            'resolved_at' => now(),
+            'resolution_notes' => $request->input('resolution_notes'),
+            'resolved_by' => $request->user()?->getKey(),
+        ])->save();
+
+        return back()->with('queue-monitor.success', 'Failure marked as resolved.');
+    }
+
+    public function bulkResolve(BulkResolveFailuresRequest $request): RedirectResponse
+    {
+        $ids = $request->validated('ids');
+
+        QueueFailure::whereIn('id', $ids)
+            ->whereNull('resolved_at')
+            ->update([
+                'resolved_at' => now(),
+                'resolved_by' => $request->user()?->getKey(),
+            ]);
+
+        return back()->with('queue-monitor.success', 'Selected failures marked as resolved.');
+    }
+
+    public function clearAll(ClearFailuresRequest $request): RedirectResponse
+    {
+        QueueFailure::query()->delete();
+
+        return back()->with('queue-monitor.success', 'All queue monitor records have been deleted.');
+    }
+
+    protected function reconstructJobFromPayload(string $payload): mixed
+    {
+        try {
+            $decoded = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+
+            if (! isset($decoded['data']['command'])) {
+                return null;
+            }
+
+            return unserialize($decoded['data']['command'], ['allowed_classes' => true]);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}
+
+
