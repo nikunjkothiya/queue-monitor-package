@@ -5,7 +5,21 @@ return [
 
     'route_prefix' => 'queue-monitor',
 
-    'middleware' => ['web', 'auth', 'queue-monitor'],
+    /*
+    |--------------------------------------------------------------------------
+    | Route Middleware
+    |--------------------------------------------------------------------------
+    |
+    | These middleware are applied to all Queue Monitor routes.
+    | By default we only use "web" so the package also works in apps
+    | without authentication or a login route.
+    |
+    | In apps with authentication, you can change this to:
+    | ['web', 'auth', 'queue-monitor']
+    | to require login + the viewQueueMonitor gate.
+    |
+    */
+    'middleware' => ['web'],
 
     'alerts' => [
         'enabled' => env('QUEUE_MONITOR_ALERTS', true),

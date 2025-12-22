@@ -86,6 +86,19 @@ php artisan migrate
 
 This package **only** protects its own routes (those under `/queue-monitor` by default) using a route middleware alias called `queue-monitor`. Your existing application routes are never wrapped by this middleware.
 
+By default, the route middleware stack is just:
+
+```php
+['web']
+```
+
+so the dashboard works even in applications **without authentication or a login route**.  
+If your app has authentication and you want to lock the dashboard down, you can change the `middleware` entry in `config/queue-monitor.php` to:
+
+```php
+'middleware' => ['web', 'auth', 'queue-monitor'],
+```
+
 To control who can access the dashboard, define the `viewQueueMonitor` ability.  
 You can do this either in your existing `App\Providers\AuthServiceProvider`, or (recommended) in a **dedicated provider** so the queue monitor logic stays separate.
 
