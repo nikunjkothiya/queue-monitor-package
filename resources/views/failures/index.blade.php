@@ -528,13 +528,12 @@
                                     <div class="job-info">
                                         <div class="job-name">{{ $failure->job_name }}</div>
                                         <div class="job-meta">
-                                            {{ $failure->connection ?? 'default' }}
-                                            @if($failure->retry_count > 0)
-                                                <span class="retry-badge">
-                                                    <i data-lucide="refresh-cw" style="width: 10px; height: 10px;"></i>
-                                                    {{ $failure->retry_count }}
+                                            @if($failure->occurrences_count > 1)
+                                                <span class="badge badge-info" style="font-size: 10px; padding: 2px 6px;">
+                                                    {{ $failure->occurrences_count }} occurrences
                                                 </span>
                                             @endif
+                                            {{ $failure->connection ?? 'default' }}
                                         </div>
                                     </div>
                                 </a>
@@ -543,8 +542,13 @@
                                 <span class="queue-badge">{{ $failure->queue ?? 'default' }}</span>
                             </td>
                             <td>
-                                <div class="exception-preview" title="{{ $failure->exception_message }}">
-                                    {{ \Illuminate\Support\Str::limit($failure->exception_message, 60) }}
+                                <div class="job-info" style="gap: 4px;">
+                                    <div class="job-meta" style="color: var(--danger); font-weight: 600;">
+                                        {{ class_basename($failure->exception_class) }}
+                                    </div>
+                                    <div class="exception-preview" title="{{ $failure->exception_message }}">
+                                        {{ \Illuminate\Support\Str::limit($failure->exception_message, 60) }}
+                                    </div>
                                 </div>
                             </td>
                             <td>

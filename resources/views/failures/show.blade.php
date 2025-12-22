@@ -535,16 +535,22 @@
     {{-- Stats Row --}}
     <div class="detail-stats">
         <div class="detail-stat">
-            <div class="detail-stat-label">Queue</div>
-            <div class="detail-stat-value">{{ $failure->queue ?? 'default' }}</div>
+            <div class="detail-stat-label">Occurrences</div>
+            <div class="detail-stat-value">
+                <span class="badge badge-info">{{ $failure->occurrences_count }}</span>
+            </div>
         </div>
         <div class="detail-stat">
-            <div class="detail-stat-label">Connection</div>
-            <div class="detail-stat-value">{{ $failure->connection ?? 'default' }}</div>
+            <div class="detail-stat-label">Queue / Connection</div>
+            <div class="detail-stat-value" style="font-size: 14px;">
+                {{ $failure->queue ?? 'default' }} ({{ $failure->connection ?? 'default' }})
+            </div>
         </div>
         <div class="detail-stat">
-            <div class="detail-stat-label">Environment</div>
-            <div class="detail-stat-value">{{ $failure->environment ?? 'unknown' }}</div>
+            <div class="detail-stat-label">Environment / Host</div>
+            <div class="detail-stat-value" style="font-size: 14px;">
+                {{ $failure->environment }} @ {{ $failure->hostname ?? 'unknown' }}
+            </div>
         </div>
         <div class="detail-stat">
             <div class="detail-stat-label">Failed At</div>
@@ -699,24 +705,42 @@
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">
-                            <i data-lucide="fingerprint" style="width: 14px; height: 14px;"></i>
-                            UUID
+                            <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
+                            Exception
                         </span>
-                        <span class="meta-value" style="font-size: 12px;">{{ $failure->uuid ?? '-' }}</span>
+                        <span class="meta-value" style="color: var(--danger);">{{ $failure->exception_class }}</span>
+                    </div>
+                    <div class="meta-item" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <span class="meta-label">
+                            <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+                            Failure Location
+                        </span>
+                        <span class="meta-value" style="text-align: left; font-size: 13px; color: var(--text-muted);">
+                            {{ $failure->file }}:<strong>{{ $failure->line }}</strong>
+                        </span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">
+                            <i data-lucide="fingerprint" style="width: 14px; height: 14px;"></i>
+                            Fingerprint
+                        </span>
+                        <span class="meta-value" style="font-size: 11px; font-family: monospace; color: var(--text-muted);">
+                            {{ $failure->group_hash }}
+                        </span>
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">
                             <i data-lucide="calendar" style="width: 14px; height: 14px;"></i>
-                            Created At
+                            First Seen
                         </span>
                         <span class="meta-value">{{ $failure->created_at?->format('M d, Y H:i:s') }}</span>
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">
                             <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
-                            Updated At
+                            Last Seen
                         </span>
-                        <span class="meta-value">{{ $failure->updated_at?->format('M d, Y H:i:s') }}</span>
+                        <span class="meta-value">{{ $failure->failed_at?->format('M d, Y H:i:s') }}</span>
                     </div>
                     @if($failure->retry_count > 0)
                         <div class="meta-item">
@@ -750,7 +774,8 @@
                                 <div class="timeline-content">
                                     <div class="timeline-label">Retried {{ $failure->retry_count }}x</div>
                                     <div class="timeline-time">
-                                        {{ $failure->last_retried_at?->format('M d, Y H:i:s') ?? 'Unknown' }}</div>
+                                        {{ $failure->last_retried_at?->format('M d, Y H:i:s') ?? 'Unknown' }}
+                                    </div>
                                 </div>
                             </div>
                         @endif
