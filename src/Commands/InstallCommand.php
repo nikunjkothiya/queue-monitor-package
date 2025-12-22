@@ -7,9 +7,10 @@ use Illuminate\Support\Facades\Artisan;
 
 class InstallCommand extends Command
 {
-    protected $signature = 'queue-monitor:install {--force : Overwrite existing files when publishing}';
+    protected $signature = 'queue-monitor:install
+        {--force : Overwrite existing files when publishing}';
 
-    protected $description = 'Install Laravel Queue Monitor (publish config, migrations, views, and run migrations)';
+    protected $description = 'Install Laravel Queue Monitor (publish config, migrations, and views)';
 
     public function handle(): int
     {
@@ -37,9 +38,7 @@ class InstallCommand extends Command
         ]);
         $this->output->write(Artisan::output());
 
-        $this->info('Running migrations...');
-        Artisan::call('migrate', ['--force' => true]);
-        $this->output->write(Artisan::output());
+        $this->info('Install complete. Remember to run "php artisan migrate" in your application when you are ready.');
 
         $this->info('Queue Monitor installation completed.');
 

@@ -62,7 +62,7 @@ composer require nikunjkothiya/laravel-queue-monitor:dev-main
 - Always pull/install from **main** for stable code.
 - **Do not** install from `dev` unless you are contributing and accept breaking changes.
 
-2. **Run the install command (publishes assets + migrates)**
+2. **Run the install command (publishes assets)**
 
 The easiest way to get started is to run the built-in install command:
 
@@ -75,7 +75,12 @@ This will:
 - Publish the package config file.
 - Publish the migrations.
 - Publish the views.
-- Run `php artisan migrate`.
+
+After installing and reviewing the published migrations, you should run your app migrations as usual:
+
+```bash
+php artisan migrate
+```
 
 3. **Authorize access (restricting the dashboard URL)**
 
