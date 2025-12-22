@@ -53,6 +53,7 @@ class DashboardController extends Controller
 
         $alertConfig = config('queue-monitor.alerts');
         $queueDiagnostics = $this->diagnostics->summarize();
+        $autoRefreshSeconds = (int) config('queue-monitor.dashboard.auto_refresh_seconds', 10);
 
         return view('queue-monitor::dashboard.index', [
             'totalFailures' => $totalFailures,
@@ -67,6 +68,7 @@ class DashboardController extends Controller
             'queueDrivers' => $queueDrivers,
             'alertConfig' => $alertConfig,
             'queueDiagnostics' => $queueDiagnostics,
+            'autoRefreshSeconds' => $autoRefreshSeconds,
         ]);
     }
 }

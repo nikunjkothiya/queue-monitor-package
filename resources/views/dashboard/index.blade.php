@@ -1,250 +1,252 @@
 @extends('queue-monitor::layouts.app')
 
 @section('content')
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-4 py-3">
-            <div class="flex items-center justify-between text-[11px] text-neutral-400">
-                <span>Total Failures</span>
-                <span class="inline-flex items-center text-[10px] text-neutral-500">
-                    last {{ $daysWindow }} days
-                </span>
-            </div>
-            <div class="mt-2 flex items-baseline space-x-2">
-                <div class="text-2xl font-semibold text-neutral-50">{{ $totalFailures }}</div>
-            </div>
-        </div>
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-4 py-3">
-            <div class="flex items-center justify-between text-[11px] text-neutral-400">
-                <span>Unresolved</span>
-                <span class="inline-flex items-center text-red-400 text-[10px]">
-                    requiring attention
-                </span>
-            </div>
-            <div class="mt-2 flex items-baseline space-x-2">
-                <div class="text-2xl font-semibold text-red-400">{{ $unresolvedCount }}</div>
-            </div>
-        </div>
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-4 py-3">
-            <div class="flex items-center justify-between text-[11px] text-neutral-400">
-                <span>Resolution Rate</span>
-                <span class="inline-flex items-center text-emerald-400 text-[10px]">
-                    resolved in window
-                </span>
-            </div>
-            <div class="mt-2 flex items-baseline space-x-2">
-                <div class="text-2xl font-semibold text-emerald-400">
-                    {{ number_format($resolutionRate, 1) }}%
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between text-muted">
+                        <span>Total Failures</span>
+                        <span>last {{ $daysWindow }} days</span>
+                    </div>
+                    <h3 class="mt-2 mb-0">{{ $totalFailures }}</h3>
                 </div>
             </div>
         </div>
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 px-4 py-3">
-            <div class="flex items-center justify-between text-[11px] text-neutral-400">
-                <span>Avg Resolution Time</span>
-                <span class="inline-flex items-center text-[10px] text-neutral-500">
-                    from failure to resolution
-                </span>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between text-muted">
+                        <span>Unresolved</span>
+                        <span>requiring attention</span>
+                    </div>
+                    <h3 class="mt-2 mb-0 text-danger">{{ $unresolvedCount }}</h3>
+                </div>
             </div>
-            <div class="mt-2 flex items-baseline space-x-2">
-                @php
-                    $avgInterval = $avgResolutionSeconds !== null ? \Carbon\CarbonInterval::seconds($avgResolutionSeconds)->cascade() : null;
-                @endphp
-                <div class="text-2xl font-semibold text-neutral-50">
-                    @if ($avgInterval)
-                        {{ $avgInterval->hours }}h {{ $avgInterval->minutes }}m
-                    @else
-                        —
-                    @endif
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between text-muted">
+                        <span>Resolution Rate</span>
+                        <span>resolved in window</span>
+                    </div>
+                    <h3 class="mt-2 mb-0 text-success">
+                        {{ number_format($resolutionRate, 1) }}%
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100">
+                <div class="card-body small">
+                    <div class="d-flex justify-content-between text-muted">
+                        <span>Avg Resolution Time</span>
+                        <span>from failure to resolution</span>
+                    </div>
+                    @php
+                        $avgInterval = $avgResolutionSeconds !== null ? \Carbon\CarbonInterval::seconds($avgResolutionSeconds)->cascade() : null;
+                    @endphp
+                    <h3 class="mt-2 mb-0">
+                        @if ($avgInterval)
+                            {{ $avgInterval->hours }}h {{ $avgInterval->minutes }}m
+                        @else
+                            —
+                        @endif
+                    </h3>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="mb-6">
-        <div class="text-center text-[11px] tracking-[0.25em] text-neutral-500 mb-3">
-            QUEUE DRIVERS
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            @foreach ($queueDrivers as $driver)
-                <div class="rounded-2xl border border-neutral-800 bg-neutral-900/80 px-4 py-5 flex flex-col justify-between">
-                    <div class="text-sm font-semibold text-neutral-100">
-                        {{ $driver['name'] }}
-                    </div>
-                    <div class="mt-1 text-[11px] text-neutral-500">
-                        {{ $driver['subtitle'] }}
+    <div class="mb-3 text-center text-uppercase small text-muted">
+        Queue Drivers
+    </div>
+    <div class="row g-3 mb-4">
+        @foreach ($queueDrivers as $driver)
+            <div class="col-6 col-lg-3">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body small">
+                        <div class="fw-semibold">{{ $driver['name'] }}</div>
+                        <div class="text-muted">{{ $driver['subtitle'] }}</div>
                     </div>
                 </div>
-            @endforeach
-        </div>
+            </div>
+        @endforeach
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4 lg:col-span-2">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xs font-semibold text-neutral-300">Failures Over Time</h2>
-                <span class="text-[11px] text-neutral-500">Last {{ $daysWindow }} days</span>
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center small text-muted">
+                    <span>Failures Over Time</span>
+                    <span>Last {{ $daysWindow }} days</span>
+                </div>
+                <div class="card-body">
+                    <div style="height:260px">
+                        <canvas id="failuresOverTimeChart" class="w-100 h-100"></canvas>
+                    </div>
+                </div>
             </div>
-            <canvas id="failuresOverTimeChart" height="120"></canvas>
-        </div>
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
-            <h2 class="text-xs font-semibold text-neutral-300 mb-3">Top Failing Jobs</h2>
-            <ul class="divide-y divide-neutral-800 text-xs">
-                @forelse($topFailingJobs as $job)
-                    <li class="py-2 flex justify-between">
-                        <span class="truncate text-neutral-200" title="{{ $job->job_name }}">{{ $job->job_name }}</span>
-                        <span class="font-mono text-neutral-400">{{ $job->count }}</span>
-                    </li>
-                @empty
-                    <li class="py-2 text-neutral-500">No failures recorded yet.</li>
-                @endforelse
-            </ul>
-        </div>
-    </div>
 
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4 lg:col-span-1">
-            <div class="flex items-center justify-between mb-3">
-                <div>
-                    <h2 class="text-xs font-semibold text-neutral-300">Queue Health Score</h2>
-                    <p class="mt-1 text-[11px] text-neutral-500">
-                        At-a-glance 0–100 health based on resolution rate, backlog, and recent failure trends.
-                    </p>
+            <div class="card">
+                <div class="card-header small">
+                    Top Failing Jobs
                 </div>
-            </div>
-            <div class="mt-4 flex items-center space-x-4">
-                @php
-                    $healthLabel = $healthScore >= 80 ? 'Healthy' : ($healthScore >= 50 ? 'Warning' : 'Critical');
-                    $healthColor = $healthScore >= 80 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-600/40' : ($healthScore >= 50 ? 'bg-amber-500/10 text-amber-300 border-amber-600/40' : 'bg-red-500/10 text-red-400 border-red-600/40');
-                @endphp
-                <div class="inline-flex flex-col items-start">
-                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] border {{ $healthColor }}">
-                        {{ $healthScore }}
-                    </span>
-                    <span class="mt-2 text-[11px] text-neutral-400">
-                        {{ $healthLabel }}
-                    </span>
-                </div>
-                <div class="text-[11px] text-neutral-500">
-                    Higher scores mean fewer unresolved failures and faster resolution times.
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush small mb-0">
+                        @forelse($topFailingJobs as $job)
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span class="text-truncate" title="{{ $job->job_name }}">{{ $job->job_name }}</span>
+                                <span class="text-muted">{{ $job->count }}</span>
+                            </li>
+                        @empty
+                            <li class="list-group-item text-muted">No failures recorded yet.</li>
+                        @endforelse
+                    </ul>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4 lg:col-span-1">
-            <div class="flex items-center justify-between mb-3">
-                <div>
-                    <h2 class="text-xs font-semibold text-neutral-300">Smart Alert Throttling</h2>
-                    <p class="mt-1 text-[11px] text-neutral-500">
+        <div class="col-lg-4">
+            <div class="card mb-3">
+                <div class="card-header small">
+                    Queue Health Score
+                </div>
+                <div class="card-body small">
+                    @php
+                        $healthLabel = $healthScore >= 80 ? 'Healthy' : ($healthScore >= 50 ? 'Warning' : 'Critical');
+                        $badgeClass = $healthScore >= 80 ? 'bg-success' : ($healthScore >= 50 ? 'bg-warning text-dark' : 'bg-danger');
+                    @endphp
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge {{ $badgeClass }} rounded-pill fs-6">
+                            {{ $healthScore }}
+                        </span>
+                        <div>
+                            <div class="fw-semibold">{{ $healthLabel }}</div>
+                            <div class="text-muted">
+                                Higher scores mean fewer unresolved failures and faster resolution times.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header small">
+                    Smart Alert Throttling
+                </div>
+                <div class="card-body small">
+                    <p class="text-muted mb-2">
                         Prevent alert fatigue with rate limiting per environment and failure burst detection.
                     </p>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="badge bg-secondary-subtle text-secondary">
+                            {{ $alertConfig['throttle_minutes'] ?? 5 }} min cooldown
+                        </span>
+                        <span class="badge bg-secondary-subtle text-secondary">
+                            Window: {{ $alertConfig['window_minutes'] ?? 5 }} min
+                        </span>
+                        <span class="badge bg-secondary-subtle text-secondary">
+                            Min failures: {{ $alertConfig['min_failures_for_alert'] ?? 1 }}
+                        </span>
+                    </div>
+                    <p class="text-muted mb-0">
+                        Alerts fire only when failures cross the configured threshold inside the time window,
+                        and are suppressed until the cooldown expires.
+                    </p>
                 </div>
             </div>
-            <div class="mt-4 flex flex-wrap gap-2 text-[11px]">
-                <span class="inline-flex items-center rounded-full bg-neutral-800 px-2 py-0.5 text-neutral-300">
-                    {{ $alertConfig['throttle_minutes'] ?? 5 }} min cooldown
-                </span>
-                <span class="inline-flex items-center rounded-full bg-neutral-800 px-2 py-0.5 text-neutral-300">
-                    Window: {{ $alertConfig['window_minutes'] ?? 5 }} min
-                </span>
-                <span class="inline-flex items-center rounded-full bg-neutral-800 px-2 py-0.5 text-neutral-300">
-                    Min failures: {{ $alertConfig['min_failures_for_alert'] ?? 1 }}
-                </span>
+
+            <div class="card">
+                <div class="card-header small">
+                    Queue Driver Diagnostics
+                </div>
+                <div class="card-body small">
+                    <div class="mb-2">
+                        <strong>Default connection:</strong> {{ $queueDiagnostics['default'] ?? 'not set' }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Driver:</strong> {{ $queueDiagnostics['driver'] ?? 'unknown' }}
+                    </div>
+                    <ul class="mb-0 ps-3 text-muted">
+                        @foreach ($queueDiagnostics['messages'] as $message)
+                            <li>{{ $message }}</li>
+                        @endforeach
+                    </ul>
+                </div>
             </div>
-            <p class="mt-3 text-[11px] text-neutral-500">
-                Alerts fire only when failures cross the configured threshold inside the time window,
-                and are suppressed until the cooldown expires.
-            </p>
         </div>
     </div>
 
-    <div class="rounded-xl border border-{{ $queueDiagnostics['status'] === 'ok' ? 'emerald-800' : ($queueDiagnostics['status'] === 'warning' ? 'amber-800' : 'red-800') }} bg-neutral-900/70 p-4 lg:col-span-1">
-        <div class="flex items-center justify-between mb-3">
-            <div>
-                <h2 class="text-xs font-semibold text-neutral-300">Queue Driver Diagnostics</h2>
-                <p class="mt-1 text-[11px] text-neutral-500">
-                    Checks that your default queue connection and driver are configured correctly.
-                </p>
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header small d-flex justify-content-between align-items-center">
+                    <span>Projects</span>
+                    <span class="text-muted">Your monitored queues</span>
+                </div>
+                <div class="card-body small">
+                    <ul class="list-group list-group-flush mb-0">
+                        @foreach ($topFailingJobs as $job)
+                            <li class="list-group-item d-flex justify-content-between">
+                                <div>
+                                    <div class="fw-semibold text-truncate" title="{{ $job->job_name }}">{{ $job->job_name }}</div>
+                                    <div class="text-muted">
+                                        {{ $job->count }} failures in last {{ $daysWindow }} days
+                                    </div>
+                                </div>
+                                <span class="badge bg-danger-subtle text-danger">Hot</span>
+                            </li>
+                        @endforeach
+                        @if ($topFailingJobs->isEmpty())
+                            <li class="list-group-item text-muted">No active failures. Queues look healthy.</li>
+                        @endif
+                    </ul>
+                </div>
             </div>
-        </div>
-        <div class="mt-3 text-[11px] text-neutral-400 space-y-1">
-            <div>
-                <span class="font-semibold text-neutral-200">Default connection:</span>
-                <span>{{ $queueDiagnostics['default'] ?? 'not set' }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-neutral-200">Driver:</span>
-                <span>{{ $queueDiagnostics['driver'] ?? 'unknown' }}</span>
-            </div>
-        </div>
-        <ul class="mt-3 space-y-1 text-[11px]">
-            @foreach ($queueDiagnostics['messages'] as $message)
-                <li class="text-neutral-300">• {{ $message }}</li>
-            @endforeach
-        </ul>
-    </div>
-    </div>
-
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xs font-semibold text-neutral-300">Projects</h2>
-                <span class="text-[11px] text-neutral-500">Your monitored queues</span>
-            </div>
-            <ul class="space-y-3 text-xs">
-                @foreach ($topFailingJobs as $job)
-                    <li class="flex items-center justify-between">
-                        <div>
-                            <div class="text-neutral-200 truncate" title="{{ $job->job_name }}">{{ $job->job_name }}</div>
-                            <div class="text-[11px] text-neutral-500">
-                                {{ $job->count }} failures in last {{ $daysWindow }} days
-                            </div>
-                        </div>
-                        <span class="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-[11px] font-medium text-red-400">
-                            Hot
-                        </span>
-                    </li>
-                @endforeach
-                @if ($topFailingJobs->isEmpty())
-                    <li class="text-neutral-500 text-xs">No active failures. Queues look healthy.</li>
-                @endif
-            </ul>
         </div>
 
-        <div class="rounded-xl border border-neutral-800 bg-neutral-900/70 p-4">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-xs font-semibold text-neutral-300">Recent Failures</h2>
-                <a href="{{ route('queue-monitor.failures.index') }}" class="text-[11px] text-neutral-400 hover:text-neutral-200">
-                    View all
-                </a>
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header small d-flex justify-content-between align-items-center">
+                    <span>Recent Failures</span>
+                    <a href="{{ route('queue-monitor.failures.index') }}" class="text-decoration-none small">
+                        View all
+                    </a>
+                </div>
+                <div class="card-body small p-0">
+                    <ul class="list-group list-group-flush mb-0">
+                        @forelse($recentFailures as $failure)
+                            @php
+                                $isResolved = $failure->isResolved();
+                                $isNew = !$isResolved && $failure->failed_at && $failure->failed_at->gt(now()->subMinutes(30));
+                                $statusLabel = $isResolved ? 'Resolved' : ($isNew ? 'New' : 'Requiring attention');
+                                $badgeClass = $isResolved ? 'bg-success-subtle text-success' : ($isNew ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-dark');
+                            @endphp
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="me-3 flex-grow-1">
+                                    <a href="{{ route('queue-monitor.failures.show', $failure) }}" class="fw-semibold text-decoration-none">
+                                        {{ $failure->job_name }}
+                                    </a>
+                                    <div class="text-muted">
+                                        {{ \Illuminate\Support\Str::limit($failure->exception_message, 80) }}
+                                    </div>
+                                    <div class="text-muted">
+                                        {{ $failure->queue ?? 'default' }} • {{ $failure->environment }} •
+                                        {{ optional($failure->failed_at)->diffForHumans() }}
+                                    </div>
+                                </div>
+                                <span class="badge {{ $badgeClass }} align-self-center">
+                                    {{ $statusLabel }}
+                                </span>
+                            </li>
+                        @empty
+                            <li class="list-group-item text-muted">No recent failures.</li>
+                        @endforelse
+                    </ul>
+                </div>
             </div>
-            <ul class="divide-y divide-neutral-800 text-xs">
-                @forelse($recentFailures as $failure)
-                    @php
-                        $isResolved = $failure->isResolved();
-                        $isNew = !$isResolved && $failure->failed_at && $failure->failed_at->gt(now()->subMinutes(30));
-                        $statusLabel = $isResolved ? 'Resolved' : ($isNew ? 'New' : 'Requiring attention');
-                        $statusClasses = $isResolved ? 'bg-emerald-500/10 text-emerald-400' : ($isNew ? 'bg-red-500/10 text-red-400' : 'bg-amber-500/10 text-amber-300');
-                    @endphp
-                    <li class="py-3 flex items-start justify-between space-x-3">
-                        <div class="min-w-0">
-                            <a href="{{ route('queue-monitor.failures.show', $failure) }}" class="text-neutral-100 font-medium hover:text-red-300">
-                                {{ $failure->job_name }}
-                            </a>
-                            <div class="mt-0.5 text-[11px] text-neutral-400">
-                                {{ \Illuminate\Support\Str::limit($failure->exception_message, 80) }}
-                            </div>
-                            <div class="mt-1 text-[11px] text-neutral-500">
-                                {{ $failure->queue ?? 'default' }} • {{ $failure->environment }} •
-                                {{ optional($failure->failed_at)->diffForHumans() }}
-                            </div>
-                        </div>
-                        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium {{ $statusClasses }}">
-                            {{ $statusLabel }}
-                        </span>
-                    </li>
-                @empty
-                    <li class="py-4 text-neutral-500 text-xs">No recent failures.</li>
-                @endforelse
-            </ul>
         </div>
     </div>
 
@@ -277,6 +279,14 @@
                     }
                 }
             });
+        }
+
+        // Auto refresh the dashboard if enabled
+        const autoRefreshSeconds = {{ (int) $autoRefreshSeconds }};
+        if (autoRefreshSeconds > 0) {
+            setInterval(function() {
+                window.location.reload();
+            }, autoRefreshSeconds * 1000);
         }
     </script>
 @endsection
