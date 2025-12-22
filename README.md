@@ -22,6 +22,7 @@ Self-hosted queue failure monitoring and analytics dashboard for Laravel 11+ app
 - **Queue driver diagnostics**:
   - Detects misconfiguration of the default queue connection (`QUEUE_CONNECTION`).
   - Highlights missing Redis/Database/SQS settings so developers can fix env issues.
+  - Configurable auto-refresh for the dashboard so you always see near real-time data.
 - **Artisan commands**:
   - `queue-monitor:prune` to prune old failures.
   - `queue-monitor:compute-analytics` to precompute analytics (optional).
@@ -185,6 +186,9 @@ QUEUE_MONITOR_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
 QUEUE_MONITOR_MIN_FAILURES=3
 QUEUE_MONITOR_WINDOW_MINUTES=5
 QUEUE_MONITOR_THROTTLE_MINUTES=5
+
+# Optional: dashboard auto-refresh interval (seconds, 0 = disabled)
+QUEUE_MONITOR_AUTO_REFRESH=10
 ```
 
 ---

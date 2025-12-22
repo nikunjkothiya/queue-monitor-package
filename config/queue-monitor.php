@@ -44,6 +44,8 @@ return [
     'dashboard' => [
         'title' => 'Queue Monitor',
         'health_score_enabled' => true,
+        // Auto-refresh interval in seconds for the dashboard (0 = disabled)
+        'auto_refresh_seconds' => env('QUEUE_MONITOR_AUTO_REFRESH', 10),
     ],
 ];
 
