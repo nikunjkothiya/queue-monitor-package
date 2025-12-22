@@ -8,7 +8,7 @@ class ClearFailuresRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return $this->user() ? $this->user()->can('viewQueueMonitor') : true;
     }
 
     public function rules(): array

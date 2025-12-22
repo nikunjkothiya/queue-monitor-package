@@ -28,11 +28,14 @@ class QueueFailure extends Model
         'resolved_at',
         'resolution_notes',
         'resolved_by',
+        'retry_count',
+        'last_retried_at',
     ];
 
     protected $casts = [
         'failed_at' => 'datetime',
         'resolved_at' => 'datetime',
+        'last_retried_at' => 'datetime',
     ];
 
     protected static function booted(): void

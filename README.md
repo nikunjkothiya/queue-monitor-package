@@ -1,42 +1,58 @@
-## Laravel Queue Monitor
+# Laravel Queue Monitor
 
-Self-hosted queue failure monitoring and analytics dashboard for Laravel 11+ applications.
+<p align="center">
+  <strong>Self-hosted queue failure monitoring and analytics dashboard for Laravel 11+ applications.</strong>
+</p>
 
-### Features
-
-- **Queue drivers**: Works with Laravel queues using **Redis**, **Database**, **SQS**, and **Sync** drivers.
-- **Dashboard**:
-  - Total failures and unresolved failures (last N days).
-  - **Queue Health Score** (0–100) based on resolution rate, backlog, and recent failure trends.
-  - Resolution rate and average resolution time.
-  - Failures-over-time chart and top failing jobs.
-  - Recent failures feed with status (New / Requiring attention / Resolved).
-- **Failure management**:
-  - Stores failed jobs in `queue_failures` table with payload, exception, stack trace, environment, and resolver info.
-  - Detail page per failure with retry, resolve, and resolution notes.
-  - Bulk resolve from the failures list.
-- **Smart Alert Throttling**:
-  - Email + Slack alerts on failure bursts.
-  - Sliding time window + minimum failures threshold.
-  - Cooldown window to avoid alert spam.
-- **Queue driver diagnostics**:
-  - Detects misconfiguration of the default queue connection (`QUEUE_CONNECTION`).
-  - Highlights missing Redis/Database/SQS settings so developers can fix env issues.
-  - Configurable auto-refresh for the dashboard so you always see near real-time data.
-- **Artisan commands**:
-  - `queue-monitor:prune` to prune old failures.
-  - `queue-monitor:compute-analytics` to precompute analytics (optional).
-  - Optional UI button to **clear all records** from the `queue_failures` table when you need to reduce database size.
+<p align="center">
+  A premium, modern queue monitoring solution with dark mode, real-time dashboard, and intelligent alerting.
+</p>
 
 ---
 
-### Installation
+## ✨ Features
 
-1. **Require the package from GitHub**
+### 🎨 Modern Dashboard
+- **Dark/Light Mode** – Toggle between themes with localStorage persistence
+- **Glassmorphism UI** – Premium card designs with modern aesthetics
+- **Health Score Ring** – Animated gauge showing overall queue health (0-100)
+- **Real-time Charts** – Beautiful area charts for failures over time
+- **Auto-refresh** – Configurable dashboard refresh with countdown indicator
 
-Until this package is published on Packagist, you can install it directly from GitHub.
+### 📊 Queue Analytics
+- **Total Failures** – Track failures in configurable time windows
+- **Resolution Rate** – Monitor how quickly issues are resolved
+- **Average Resolution Time** – Measure time from failure to resolution
+- **Top Failing Jobs** – Identify problematic jobs at a glance
+- **Queue Driver Diagnostics** – Health checks for Redis, Database, SQS, and Sync drivers
 
-In your Laravel application's `composer.json`, add the repository:
+### 🔧 Failure Management
+- **Search & Filter** – Find failures by job name
+- **Bulk Actions** – Resolve multiple failures at once
+- **Retry Jobs** – Re-dispatch failed jobs with retry count tracking
+- **Resolution Notes** – Document how issues were resolved
+- **Timeline View** – Visual job lifecycle from failure to resolution
+- **Copy-to-Clipboard** – Easily copy stack traces and payloads
+
+### 🚨 Smart Alert Throttling
+- **Email + Slack Alerts** – Multi-channel notifications on failure bursts
+- **Sliding Window** – Count failures in configurable time windows
+- **Cooldown Period** – Prevent alert spam during incidents
+- **Environment Filtering** – Alert only in specific environments
+
+### 🔌 Queue Driver Support
+- **Redis** – In-memory queue driver
+- **Database** – MySQL, PostgreSQL queues
+- **Amazon SQS** – AWS managed queues
+- **Sync** – Development synchronous driver
+
+---
+
+## 📦 Installation
+
+### 1. Require the Package
+
+Until published on Packagist, install directly from GitHub. Add to your `composer.json`:
 
 ```json
 {
@@ -49,247 +65,231 @@ In your Laravel application's `composer.json`, add the repository:
 }
 ```
 
-Then require the package (use the **main** branch for stable installs):
+Then require the package:
 
 ```bash
 composer require nikunjkothiya/laravel-queue-monitor:dev-main
 ```
 
-- The `main` branch is the stable branch consumers should use.
-- The `dev` branch is for ongoing development; avoid depending on it in production apps.
-
-**Branch policy (important):**
-
-- Always pull/install from **main** for stable code.
-- **Do not** install from `dev` unless you are contributing and accept breaking changes.
-
-2. **Run the install command (publishes assets)**
-
-The easiest way to get started is to run the built-in install command:
+### 2. Run the Install Command
 
 ```bash
 php artisan queue-monitor:install
 ```
 
-This will:
+This publishes:
+- Configuration file
+- Database migrations
+- View files (optional, for customization)
 
-- Publish the package config file.
-- Publish the migrations.
-- Publish the views.
-
-After installing and reviewing the published migrations, you should run your app migrations as usual:
-
-```bash
-php artisan migrate
-```
-
-3. **Authorize access (restricting the dashboard URL)**
-
-This package **only** protects its own routes (those under `/queue-monitor` by default) using a route middleware alias called `queue-monitor`. Your existing application routes are never wrapped by this middleware.
-
-By default, the route middleware stack is just:
-
-```php
-['web']
-```
-
-so the dashboard works even in applications **without authentication or a login route**.  
-If your app has authentication and you want to lock the dashboard down, you can change the `middleware` entry in `config/queue-monitor.php` to:
-
-```php
-'middleware' => ['web', 'auth', 'queue-monitor'],
-```
-
-To control who can access the dashboard, define the `viewQueueMonitor` ability.  
-You can do this either in your existing `App\Providers\AuthServiceProvider`, or (recommended) in a **dedicated provider** so the queue monitor logic stays separate.
-
-Example dedicated provider (recommended):
-
-```php
-// app/Providers/QueueMonitorAuthServiceProvider.php
-
-namespace App\Providers;
-
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-
-class QueueMonitorAuthServiceProvider extends ServiceProvider
-{
-    public function boot(): void
-    {
-        // Only admins can view the queue monitor dashboard
-        Gate::define('viewQueueMonitor', fn ($user) => $user->is_admin);
-    }
-}
-```
-
-Then register this provider in your `config/app.php` under `providers`:
-
-```php
-'providers' => [
-    // ...
-    App\Providers\QueueMonitorAuthServiceProvider::class,
-],
-```
-
-How it works:
-
-- The package routes are grouped with middleware: `['web', 'auth', 'queue-monitor']`.
-- The `queue-monitor` middleware checks `auth()->user()->can('viewQueueMonitor')`.
-- If the ability returns `false`, only the `/queue-monitor` URLs return **403 Forbidden**.
-- Your other application URLs are not affected by this package.
-
-If you want to make the dashboard public (for example, in a locked-down internal network), you can simply allow all users:
-
-```php
-Gate::define('viewQueueMonitor', fn ($user) => true);
-```
-
-If you prefer to do each step manually instead of using `queue-monitor:install`, you can still run:
+### 3. Run Migrations
 
 ```bash
-php artisan vendor:publish --provider="NikunjKothiya\QueueMonitor\Providers\QueueMonitorServiceProvider" --tag=queue-monitor-config
-php artisan vendor:publish --provider="NikunjKothiya\QueueMonitor\Providers\QueueMonitorServiceProvider" --tag=queue-monitor-migrations
-php artisan vendor:publish --provider="NikunjKothiya\QueueMonitor\Providers\QueueMonitorServiceProvider" --tag=queue-monitor-views
 php artisan migrate
 ```
 
 ---
 
-### Configuration
+## ⚙️ Configuration
 
-Publish and review `config/queue-monitor.php`. Key options:
+Publish and customize `config/queue-monitor.php`:
 
-- **Basic**
-  - **`enabled`**: Globally enable/disable the package.
-  - **`route_prefix`**: Base URI for the dashboard (default: `queue-monitor`).
-  - **`middleware`**: Middleware stack protecting the routes (default: `['web', 'auth', 'queue-monitor']`).
-- **Alerts**
-  - **`alerts.enabled`**: Turn alerts on or off.
-  - **`alerts.mail_to`**: Email address that receives alerts (falls back to `mail.from.address`).
-  - **`alerts.slack_webhook_url`**: Slack Incoming Webhook URL for alert messages.
-  - **`alerts.min_failures_for_alert`**: Minimum number of failures in the window before sending an alert.
-  - **`alerts.window_minutes`**: Size of the sliding time window (in minutes) to count failures.
-  - **`alerts.throttle_minutes`**: Minimum time between alerts (cooldown) to prevent spam.
-- **Retention & dashboard**
-  - **`retention_days`**: How long failure records are kept before pruning.
-  - **`dashboard.title`** / **`dashboard.health_score_enabled`**: UI preferences.
+```php
+return [
+    // Enable/disable the package globally
+    'enabled' => env('QUEUE_MONITOR_ENABLED', true),
 
-Environment variables you can set in `.env`:
+    // Dashboard URL prefix
+    'route_prefix' => 'queue-monitor',
+
+    // Route middleware
+    'middleware' => ['web'],  // Add 'auth' for protected access
+
+    // Alert settings
+    'alerts' => [
+        'enabled' => env('QUEUE_MONITOR_ALERTS', true),
+        'mail_to' => env('QUEUE_MONITOR_MAIL_TO'),
+        'slack_webhook_url' => env('QUEUE_MONITOR_SLACK_WEBHOOK_URL'),
+        'min_failures_for_alert' => env('QUEUE_MONITOR_MIN_FAILURES', 1),
+        'window_minutes' => env('QUEUE_MONITOR_WINDOW_MINUTES', 5),
+        'throttle_minutes' => env('QUEUE_MONITOR_THROTTLE_MINUTES', 5),
+    ],
+
+    // Data retention
+    'retention_days' => 90,
+
+    // Dashboard settings
+    'dashboard' => [
+        'title' => 'Queue Monitor',
+        'health_score_enabled' => true,
+        'auto_refresh_seconds' => env('QUEUE_MONITOR_AUTO_REFRESH', 10),
+    ],
+];
+```
+
+### Environment Variables
 
 ```env
 QUEUE_MONITOR_ENABLED=true
 
+# Alert notifications
 QUEUE_MONITOR_MAIL_TO=devops@example.com
 QUEUE_MONITOR_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
 
+# Alert throttling
 QUEUE_MONITOR_MIN_FAILURES=3
 QUEUE_MONITOR_WINDOW_MINUTES=5
 QUEUE_MONITOR_THROTTLE_MINUTES=5
 
-# Optional: dashboard auto-refresh interval (seconds, 0 = disabled)
+# Dashboard auto-refresh (seconds, 0 = disabled)
 QUEUE_MONITOR_AUTO_REFRESH=10
 ```
 
 ---
 
-### Usage
+## 🔒 Authorization
 
-#### Dashboard
+The package provides a `queue-monitor` middleware for access control.
 
-- Visit `https://your-app.test/queue-monitor` (or the custom prefix you configured) while logged in.
-- The dashboard shows:
-  - Top summary cards: **Total Failures**, **Unresolved**, **Resolution Rate**, **Avg Resolution Time**.
-  - Queue driver support strip (Redis, Database, SQS, Sync).
-  - Failures-over-time chart and top failing jobs.
-  - A **Queue Health Score** card describing current queue health.
-  - A **Smart Alert Throttling** card describing your current alert configuration (cooldown, window, min failures).
-  - Projects-style panel of “hot” jobs and a recent failures feed.
+### Public Access (Default)
 
-#### Failures list
+The dashboard is accessible without authentication by default.
 
-- Go to `queue-monitor/failures`:
-  - Filter unresolved failures.
-  - Select multiple failures and **bulk mark as resolved**.
-  - See status badges (Resolved / Unresolved).
-  - Use the **“Clear all records”** button (with confirmation) to truncate all monitoring data when the table grows too large.
+### Protected Access
 
-#### Failure detail
+To require authentication:
 
-- Click any failure to open its detail page:
-  - View metadata (queue, connection, environment, timestamps).
-  - See exception message, stack trace, and raw payload.
-  - **Retry** the failed job (reconstructs the job from serialized payload and re-dispatches it).
-  - **Resolve** the failure with optional resolution notes; resolved records store `resolved_by` user and timestamps.
+1. Update your config:
 
-#### Artisan commands
+```php
+'middleware' => ['web', 'auth', 'queue-monitor'],
+```
 
-- **Prune old failures**
+2. Define the `viewQueueMonitor` gate:
+
+```php
+// app/Providers/AuthServiceProvider.php
+use Illuminate\Support\Facades\Gate;
+
+public function boot(): void
+{
+    Gate::define('viewQueueMonitor', fn ($user) => $user->is_admin);
+}
+```
+
+---
+
+## 📖 Usage
+
+### Dashboard
+
+Visit `https://your-app.test/queue-monitor` to see:
+
+- **Stats Cards** – Total failures, unresolved count, resolution rate, avg resolution time
+- **Health Score** – Animated ring showing queue health (0-100)
+- **Failures Chart** – Area chart of failures over time
+- **Driver Status** – Which queue drivers are configured
+- **Recent Failures** – Quick access to latest issues
+- **Alert Config** – Current throttling settings
+
+### Failed Jobs List
+
+Navigate to `queue-monitor/failures`:
+
+- **Search** – Filter by job name
+- **Unresolved Filter** – Show only unresolved failures
+- **Bulk Resolve** – Select multiple and mark resolved
+- **Clear All** – Remove all records (with confirmation)
+
+### Failure Detail
+
+Click any failure to see:
+
+- **Exception Message** – With copy-to-clipboard
+- **Stack Trace** – Collapsible, with syntax highlighting
+- **Job Payload** – Collapsible JSON view
+- **Retry Button** – Re-dispatch the job
+- **Resolve Form** – Mark resolved with notes
+- **Timeline** – Visual job lifecycle
+
+---
+
+## 🛠️ Artisan Commands
+
+### Prune Old Failures
 
 ```bash
 php artisan queue-monitor:prune --days=90
 ```
 
-If `--days` is omitted, it uses `retention_days` from config.
-
-- **Compute analytics (optional)**
+### Compute Analytics
 
 ```bash
 php artisan queue-monitor:compute-analytics
 ```
 
-This touches analytics so you can warm caches or schedule it as a daily job if desired.
+---
+
+## 🎯 Queue Health Score
+
+The health score (0-100) is computed from:
+
+| Factor | Impact |
+|--------|--------|
+| Unresolved vs Total | Up to 60 points penalty |
+| Recent Failures (7 days) | Up to 40 points penalty |
+
+**Interpretation:**
+- **80-100** – Healthy ✅
+- **50-79** – Warning ⚠️
+- **0-49** – Critical 🔴
 
 ---
 
-### Smart Alert Throttling (Details)
+## 🗄️ Database Schema
 
-The package listens to `Illuminate\Queue\Events\JobFailed` events and records each failure in the database. For each failure:
+The `queue_failures` table includes:
 
-1. **Alert window and threshold**
-   - Counts how many failures occurred in the last `alerts.window_minutes` minutes.
-   - If the count is **less** than `alerts.min_failures_for_alert`, no alert is sent.
-2. **Throttle / cooldown**
-   - Stores the timestamp of the last alert in cache.
-   - If the last alert happened less than `alerts.throttle_minutes` ago, the alert is skipped.
-3. **Multi-channel notification**
-   - If alerts are allowed, a single `QueueFailureNotification` is sent to:
-     - Email (`alerts.mail_to` or the app’s `mail.from.address`).
-     - Slack (`alerts.slack_webhook_url`, via Incoming Webhooks).
-
-This keeps alerts **accurate** (fire on real bursts) and **quiet** during large incidents (no spam).
-
----
-
-### Queue Health Score (Details)
-
-The **Queue Health Score** is a 0–100 metric computed from:
-
-- Total failures vs. unresolved failures.
-- Volume of failures in the recent window (last 7 days).
-- Basic penalty for heavy recent failure activity.
-
-High scores (80–100) indicate few unresolved failures and low recent failure volume, while low scores reflect backlog and instability. The score is visible on the dashboard and can be recomputed via the `queue-monitor:compute-analytics` command if you want to cache it.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigint | Primary key |
+| uuid | uuid | Unique identifier |
+| connection | string | Queue connection name |
+| queue | string | Queue name |
+| job_name | string | Job class name |
+| payload | longtext | Serialized job payload |
+| exception_message | text | Error message |
+| stack_trace | longtext | Full stack trace |
+| failed_at | timestamp | When the job failed |
+| environment | string | App environment |
+| resolved_at | timestamp | When resolved |
+| resolution_notes | text | Resolution description |
+| resolved_by | bigint | User ID who resolved |
+| retry_count | int | Number of retry attempts |
+| last_retried_at | timestamp | Last retry timestamp |
 
 ---
 
-### Database Schema
+## 🤝 Contributing
 
-The package installs a `queue_failures` table with (simplified):
+Contributions are welcome! Please:
 
-- `id`, `uuid`
-- `connection`, `queue`, `job_name`
-- `payload` (serialized job payload, nullable)
-- `exception_message`, `stack_trace`
-- `failed_at`, `environment`
-- `resolved_at`, `resolution_notes`, `resolved_by`
-- `created_at`, `updated_at`
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
 
-You can customize or extend this migration when you publish it.
+**Branch Policy:**
+- `main` – Stable releases
+- `dev` – Development (may have breaking changes)
 
 ---
 
-### License
+## 📄 License
 
 This package is open-source software licensed under the **MIT license**.
 
+---
+
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/nikunjkothiya">Nikunj Kothiya</a>
+</p>

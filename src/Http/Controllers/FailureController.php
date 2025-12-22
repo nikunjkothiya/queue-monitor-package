@@ -21,6 +21,10 @@ class FailureController extends Controller
             $query->unresolved();
         }
 
+        if ($request->filled('search')) {
+            $query->where('job_name', 'like', '%' . $request->input('search') . '%');
+        }
+
         $failures = $query->paginate(25);
 
         return view('queue-monitor::failures.index', [
@@ -49,7 +53,11 @@ class FailureController extends Controller
 
         Bus::dispatch($job);
 
-        return back()->with('queue-monitor.success', 'Job has been re-dispatched.');
+        // Track retry
+        $failure->increment('retry_count');
+        $failure->update(['last_retried_at' => now()]);
+
+        return back()->with('queue-monitor.success', 'Job has been re-dispatched. Retry count: ' . $failure->retry_count);
     }
 
     public function resolve(ResolveFailureRequest $request, QueueFailure $failure): RedirectResponse

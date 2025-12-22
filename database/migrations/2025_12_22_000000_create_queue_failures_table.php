@@ -23,7 +23,9 @@ return new class extends Migration {
             $table->string('environment')->default(config('app.env'));
             $table->timestamp('resolved_at')->nullable();
             $table->text('resolution_notes')->nullable();
-            $table->foreignId('resolved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('resolved_by')->nullable();
+            $table->unsignedInteger('retry_count')->default(0);
+            $table->timestamp('last_retried_at')->nullable();
             $table->timestamps();
         });
     }
