@@ -1,4 +1,4 @@
-# Laravel Queue Monitor
+# Laravel Queue Monitor : Free Queue Monitoring Package
 
 <p align="center">
   <strong>Self-hosted queue failure monitoring and analytics dashboard for Laravel 11+ applications.</strong>
