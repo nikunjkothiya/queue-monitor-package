@@ -7,7 +7,6 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use NikunjKothiya\QueueMonitor\Commands\ComputeAnalyticsCommand;
-use NikunjKothiya\QueueMonitor\Commands\InstallCommand;
 use NikunjKothiya\QueueMonitor\Commands\PruneFailuresCommand;
 use NikunjKothiya\QueueMonitor\Http\Middleware\AuthorizeQueueMonitor;
 use NikunjKothiya\QueueMonitor\Listeners\JobFailedListener;
@@ -67,7 +66,6 @@ class QueueMonitorServiceProvider extends ServiceProvider
             $this->commands([
                 PruneFailuresCommand::class,
                 ComputeAnalyticsCommand::class,
-                InstallCommand::class,
             ]);
         }
     }

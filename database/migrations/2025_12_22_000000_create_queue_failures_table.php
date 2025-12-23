@@ -16,14 +16,26 @@ return new class extends Migration {
             $table->string('connection')->nullable();
             $table->string('queue')->nullable();
             $table->string('job_name');
+            $table->string('job_class')->nullable();
             $table->longText('payload')->nullable();
+            $table->string('exception_class')->nullable();
             $table->text('exception_message');
+            $table->string('file')->nullable();
+            $table->integer('line')->nullable();
             $table->longText('stack_trace');
+            $table->string('group_hash')->nullable()->index();
+            $table->string('hostname')->nullable();
             $table->timestamp('failed_at')->useCurrent();
             $table->string('environment')->default(config('app.env'));
             $table->timestamp('resolved_at')->nullable();
             $table->text('resolution_notes')->nullable();
-            $table->foreignId('resolved_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->unsignedBigInteger('resolved_by')->nullable();
+            $table->unsignedInteger('retry_count')->default(0);
+            $table->timestamp('last_retried_at')->nullable();
+            $table->boolean('is_recurring')->default(false)->index();
+            $table->longText('modified_payload')->nullable();
+            $table->unsignedBigInteger('retried_by')->nullable();
+            $table->text('retry_notes')->nullable();
             $table->timestamps();
         });
     }
