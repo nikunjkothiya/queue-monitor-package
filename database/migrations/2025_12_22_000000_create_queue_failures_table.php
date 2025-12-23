@@ -32,6 +32,10 @@ return new class extends Migration {
             $table->unsignedBigInteger('resolved_by')->nullable();
             $table->unsignedInteger('retry_count')->default(0);
             $table->timestamp('last_retried_at')->nullable();
+            $table->boolean('is_recurring')->default(false)->index();
+            $table->longText('modified_payload')->nullable();
+            $table->unsignedBigInteger('retried_by')->nullable();
+            $table->text('retry_notes')->nullable();
             $table->timestamps();
         });
     }

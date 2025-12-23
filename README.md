@@ -12,39 +12,54 @@
 
 ## ✨ Features
 
+### 🧠 Smart Insights (Expanded)
+> **Intelligent failure analysis!**
+- **Comprehensive Pattern Recognition** – Detects 30+ specific failure types including:
+  - **Laravel Specifics**: `ModelNotFound`, `ValidationException`, `MassAssignment`, `RelationNotFound`.
+  - **Database**: Deadlocks, Connection Refused, "Gone Away", Integrity violations.
+  - **System**: Memory exhaustion, Disk full, File permissions.
+  - **External**: DNS errors, SSL issues, Timeouts, Rate Limits (429).
+- **Severity Scoring** – Critical/High/Medium/Low priority based on impact and recurrence.
+- **Actionable Suggestions** – Context-aware fix recommendations for each error type.
+- **Learn from History** – Shows how similar failures were resolved before.
+- **Quick Actions** – One-click copy error, retry, and resolve.
+
+### 🔄 Smart Retry with Payload Editor
+- **Remote Retry** – Re-dispatch failed jobs directly from the dashboard.
+- **Smart Property Editor** – Edit job properties (IDs, strings, booleans) with a user-friendly UI.
+- **Raw JSON Editor** – Advanced mode to edit the full raw payload.
+- **Syntax Validation** – Real-time JSON validation with error highlighting.
+- **Audit Trail** – Track who retried with what modifications.
+
+### 🚀 Bulk Operations 
+- **Bulk Retry** – Re-dispatch multiple failed jobs at once.
+- **Bulk Resolve** – Mark multiple failures as resolved.
+- **Select All** – Quickly select all visible failures.
+
+### 🔍 Advanced Filters 
+- **Filter by Queue** – Isolate failures from specific queues.
+- **Filter by Connection** – Database, Redis, SQS, etc.
+- **Filter by Environment** – Production, staging, local.
+- **Date Range** – Filter by failure date.
+- **Recurring Only** – Show only recurring failure patterns.
+
+### 📤 Export Functionality 
+- **CSV Export** – Download failures as spreadsheet.
+- **JSON Export** – Machine-readable format for automation.
+- **Filter-aware** – Export respects current filter selections.
+
 ### 🎨 Modern Dashboard
-- **Dark/Light Mode** – Toggle between themes with localStorage persistence
-- **Glassmorphism UI** – Premium card designs with modern aesthetics
-- **Health Score Ring** – Animated gauge showing overall queue health (0-100)
-- **Real-time Charts** – Beautiful area charts for failures over time
-- **Auto-refresh** – Configurable dashboard refresh with countdown indicator
-
-### 📊 Queue Analytics
-- **Total Failures** – Track failures in configurable time windows
-- **Resolution Rate** – Monitor how quickly issues are resolved
-- **Average Resolution Time** – Measure time from failure to resolution
-- **Top Failing Jobs** – Identify problematic jobs at a glance
-- **Queue Driver Diagnostics** – Health checks for Redis, Database, SQS, and Sync drivers
-
-### 🔧 Failure Management
-- **Search & Filter** – Find failures by job name
-- **Bulk Actions** – Resolve multiple failures at once
-- **Retry Jobs** – Re-dispatch failed jobs with retry count tracking
-- **Resolution Notes** – Document how issues were resolved
-- **Timeline View** – Visual job lifecycle from failure to resolution
-- **Copy-to-Clipboard** – Easily copy stack traces and payloads
+- **Dark/Light Mode** – Toggle between themes with localStorage persistence.
+- **Glassmorphism UI** – Premium card designs with modern aesthetics.
+- **Health Score Ring** – Animated gauge showing overall queue health (0-100).
+- **Real-time Charts** – Beautiful area charts for failures over time.
+- **Auto-refresh** – Configurable dashboard refresh with countdown indicator.
 
 ### 🚨 Smart Alert Throttling
-- **Email + Slack Alerts** – Multi-channel notifications on failure bursts
-- **Sliding Window** – Count failures in configurable time windows
-- **Cooldown Period** – Prevent alert spam during incidents
-- **Environment Filtering** – Alert only in specific environments
-
-### 🔌 Queue Driver Support
-- **Redis** – In-memory queue driver
-- **Database** – MySQL, PostgreSQL queues
-- **Amazon SQS** – AWS managed queues
-- **Sync** – Development synchronous driver
+- **Email + Slack Alerts** – Multi-channel notifications on failure bursts.
+- **Sliding Window** – Count failures in configurable time windows.
+- **Cooldown Period** – Prevent alert spam during incidents.
+- **Environment Filtering** – Alert only in specific environments.
 
 ---
 
@@ -71,28 +86,27 @@ Then require the package:
 composer require nikunjkothiya/laravel-queue-monitor:dev-main
 ```
 
-### 2. Run the Install Command
+### 2. Run Migrations
 
-```bash
-php artisan queue-monitor:install
-```
-
-This publishes:
-- Configuration file
-- Database migrations
-- View files (optional, for customization)
-
-### 3. Run Migrations
+The package automatically registers its migrations. Just run:
 
 ```bash
 php artisan migrate
+```
+
+### 3. Publish Configuration (Optional)
+
+To customize the dashboard, alerts, or middleware:
+
+```bash
+php artisan vendor:publish --tag=queue-monitor-config
 ```
 
 ---
 
 ## ⚙️ Configuration
 
-Publish and customize `config/queue-monitor.php`:
+After publishing, customize `config/queue-monitor.php`:
 
 ```php
 return [
@@ -102,8 +116,8 @@ return [
     // Dashboard URL prefix
     'route_prefix' => 'queue-monitor',
 
-    // Route middleware
-    'middleware' => ['web'],  // Add 'auth' for protected access
+    // Route middleware - controlled entirely by this config
+    'middleware' => ['web', 'auth'], 
 
     // Alert settings
     'alerts' => [
@@ -149,26 +163,16 @@ QUEUE_MONITOR_AUTO_REFRESH=10
 
 ## 🔒 Authorization
 
-The package provides a `queue-monitor` middleware for access control.
-
-### Public Access (Default)
-
-The dashboard is accessible without authentication by default.
-
-### Protected Access
-
-To require authentication:
-
-1. Update your config:
+To protect the dashboard, simply add the `auth` middleware to the config:
 
 ```php
+// config/queue-monitor.php
 'middleware' => ['web', 'auth', 'queue-monitor'],
 ```
 
-2. Define the `viewQueueMonitor` gate:
+Then define the `viewQueueMonitor` gate in your `AppServiceProvider` or `AuthServiceProvider`:
 
 ```php
-// app/Providers/AuthServiceProvider.php
 use Illuminate\Support\Facades\Gate;
 
 public function boot(): void
@@ -182,105 +186,33 @@ public function boot(): void
 ## 📖 Usage
 
 ### Dashboard
+Visit `https://your-app.test/queue-monitor` to see the health score, charts, and recent failures.
 
-Visit `https://your-app.test/queue-monitor` to see:
+### Failure Detail & Smart Retry
+Click any failure to see the "Smart Insights" analysis.
+- **Retry**: Click "Retry" to re-dispatch immediately.
+- **Edit & Retry**: Use the "Smart Editor" to modify job properties (e.g., fix a typo in an email address or ID) before retrying.
 
-- **Stats Cards** – Total failures, unresolved count, resolution rate, avg resolution time
-- **Health Score** – Animated ring showing queue health (0-100)
-- **Failures Chart** – Area chart of failures over time
-- **Driver Status** – Which queue drivers are configured
-- **Recent Failures** – Quick access to latest issues
-- **Alert Config** – Current throttling settings
+### Artisan Commands
 
-### Failed Jobs List
-
-Navigate to `queue-monitor/failures`:
-
-- **Search** – Filter by job name
-- **Unresolved Filter** – Show only unresolved failures
-- **Bulk Resolve** – Select multiple and mark resolved
-- **Clear All** – Remove all records (with confirmation)
-
-### Failure Detail
-
-Click any failure to see:
-
-- **Exception Message** – With copy-to-clipboard
-- **Stack Trace** – Collapsible, with syntax highlighting
-- **Job Payload** – Collapsible JSON view
-- **Retry Button** – Re-dispatch the job
-- **Resolve Form** – Mark resolved with notes
-- **Timeline** – Visual job lifecycle
-
----
-
-## 🛠️ Artisan Commands
-
-### Prune Old Failures
-
+#### Prune Old Failures
 ```bash
 php artisan queue-monitor:prune --days=90
 ```
 
-### Compute Analytics
-
+#### Compute Analytics
 ```bash
 php artisan queue-monitor:compute-analytics
 ```
 
 ---
 
-## 🎯 Queue Health Score
-
-The health score (0-100) is computed from:
-
-| Factor | Impact |
-|--------|--------|
-| Unresolved vs Total | Up to 60 points penalty |
-| Recent Failures (7 days) | Up to 40 points penalty |
-
-**Interpretation:**
-- **80-100** – Healthy ✅
-- **50-79** – Warning ⚠️
-- **0-49** – Critical 🔴
-
----
-
-## 🗄️ Database Schema
-
-The `queue_failures` table includes:
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | bigint | Primary key |
-| uuid | uuid | Unique identifier |
-| connection | string | Queue connection name |
-| queue | string | Queue name |
-| job_name | string | Job class name |
-| payload | longtext | Serialized job payload |
-| exception_message | text | Error message |
-| stack_trace | longtext | Full stack trace |
-| failed_at | timestamp | When the job failed |
-| environment | string | App environment |
-| resolved_at | timestamp | When resolved |
-| resolution_notes | text | Resolution description |
-| resolved_by | bigint | User ID who resolved |
-| retry_count | int | Number of retry attempts |
-| last_retried_at | timestamp | Last retry timestamp |
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please:
-
 1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request
-
-**Branch Policy:**
-- `main` – Stable releases
-- `dev` – Development (may have breaking changes)
 
 ---
 

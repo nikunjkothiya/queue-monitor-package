@@ -36,12 +36,18 @@ class QueueFailure extends Model
         'resolved_by',
         'retry_count',
         'last_retried_at',
+        // New fields for enhanced features
+        'is_recurring',
+        'modified_payload',
+        'retried_by',
+        'retry_notes',
     ];
 
     protected $casts = [
         'failed_at' => 'datetime',
         'resolved_at' => 'datetime',
         'last_retried_at' => 'datetime',
+        'is_recurring' => 'boolean',
     ];
 
     protected static function booted(): void
@@ -77,6 +83,22 @@ class QueueFailure extends Model
     public function isResolved(): bool
     {
         return (bool) $this->resolved_at;
+    }
+
+    /**
+     * Scope to filter only recurring failures.
+     */
+    public function scopeRecurring(Builder $query): Builder
+    {
+        return $query->where('is_recurring', true);
+    }
+
+    /**
+     * Get the user who retried this job.
+     */
+    public function retrier(): BelongsTo
+    {
+        return $this->belongsTo(config('auth.providers.users.model'), 'retried_by');
     }
 }
 

@@ -5,13 +5,15 @@ namespace NikunjKothiya\QueueMonitor\Listeners;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Notification;
 use NikunjKothiya\QueueMonitor\Services\AlertService;
+use NikunjKothiya\QueueMonitor\Services\RecurringFailureService;
 use NikunjKothiya\QueueMonitor\Models\QueueFailure;
 use NikunjKothiya\QueueMonitor\Notifications\QueueFailureNotification;
 
 class JobFailedListener
 {
     public function __construct(
-        protected AlertService $alerts
+        protected AlertService $alerts,
+        protected RecurringFailureService $recurringFailures
     ) {
     }
 
@@ -50,6 +52,9 @@ class JobFailedListener
             'environment' => app()->environment(),
             'failed_at' => now(),
         ]);
+
+        // Detect and mark recurring failures
+        $this->recurringFailures->detectAndMarkRecurring();
 
         if ($this->alerts->shouldNotify($failure)) {
             $routes = [];

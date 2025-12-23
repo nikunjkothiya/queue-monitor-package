@@ -432,6 +432,82 @@
                 display: none;
             }
         }
+
+        /* Advanced Filters Styles */
+        .advanced-filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+        }
+
+        .filters-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-select,
+        .filter-input {
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            min-width: 140px;
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .filter-input[type="date"] {
+            width: 140px;
+        }
+
+        .export-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .recurring-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            background: var(--warning-bg);
+            color: var(--warning);
+            border-radius: var(--radius-sm);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .advanced-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filters-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-select,
+            .filter-input {
+                width: 100%;
+            }
+        }
     </style>
 
     {{-- Page Header --}}
@@ -447,8 +523,7 @@
                 <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
                 Dashboard
             </a>
-            <form method="post" action="{{ route('queue-monitor.failures.clear') }}"
-                onsubmit="return confirm('⚠️ This will permanently delete ALL queue monitor records.\n\nThis action cannot be undone. Are you sure?');">
+            <form method="post" action="{{ route('queue-monitor.failures.clear') }}" onsubmit="return confirm('⚠️ This will permanently delete ALL queue monitor records.\n\nThis action cannot be undone. Are you sure?');">
                 @csrf
                 <input type="hidden" name="confirm" value="yes">
                 <button type="submit" class="btn btn-danger">
@@ -459,33 +534,63 @@
         </div>
     </div>
 
-    {{-- Filters Bar --}}
-    <div class="filters-bar">
-        <form method="get" class="search-box" id="searchForm">
-            <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-            <input type="text" name="search" placeholder="Search by job name..." value="{{ request('search') }}"
-                onkeydown="if(event.key==='Enter'){this.form.submit()}">
-            @if(request('unresolved'))
-                <input type="hidden" name="unresolved" value="1">
-            @endif
-        </form>
+    {{-- Advanced Filters --}}
+    <div class="advanced-filters" id="advancedFilters">
+        <div class="filters-row">
+            <select name="queue" id="queueFilter" class="filter-select">
+                <option value="">All Queues</option>
+                @foreach ($filterOptions['queues'] ?? [] as $queue)
+                    <option value="{{ $queue }}" {{ request('queue') == $queue ? 'selected' : '' }}>{{ $queue }}</option>
+                @endforeach
+            </select>
 
-        <div class="filter-group">
-            <label class="filter-checkbox {{ request('unresolved') ? 'active' : '' }}" onclick="toggleFilter(this)">
-                <input type="checkbox" {{ request('unresolved') ? 'checked' : '' }}>
-                <i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>
-                Unresolved Only
-            </label>
+            <select name="connection" id="connectionFilter" class="filter-select">
+                <option value="">All Connections</option>
+                @foreach ($filterOptions['connections'] ?? [] as $connection)
+                    <option value="{{ $connection }}" {{ request('connection') == $connection ? 'selected' : '' }}>{{ $connection }}</option>
+                @endforeach
+            </select>
+
+            <select name="environment" id="environmentFilter" class="filter-select">
+                <option value="">All Environments</option>
+                @foreach ($filterOptions['environments'] ?? [] as $env)
+                    <option value="{{ $env }}" {{ request('environment') == $env ? 'selected' : '' }}>{{ $env }}</option>
+                @endforeach
+            </select>
+
+            <input type="date" name="date_from" id="dateFrom" class="filter-input" value="{{ request('date_from') }}" placeholder="From Date">
+            <input type="date" name="date_to" id="dateTo" class="filter-input" value="{{ request('date_to') }}" placeholder="To Date">
+
             <button type="button" class="btn btn-secondary btn-sm" onclick="applyFilters()">
                 <i data-lucide="filter" style="width: 14px; height: 14px;"></i>
                 Apply Filters
             </button>
+
+            <button type="button" class="btn btn-ghost btn-sm" onclick="clearFilters()">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                Clear
+            </button>
+        </div>
+
+        <div class="export-group">
+            <a href="{{ route('queue-monitor.failures.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="btn btn-ghost btn-sm">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                Export CSV
+            </a>
+            <a href="{{ route('queue-monitor.failures.export', array_merge(request()->query(), ['format' => 'json'])) }}" class="btn btn-ghost btn-sm">
+                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                Export JSON
+            </a>
         </div>
     </div>
 
     {{-- Bulk Actions Bar --}}
     <div class="bulk-actions" id="bulkActions">
         <span class="bulk-count"><span id="selectedCount">0</span> selected</span>
+        <button type="button" class="btn btn-sm" onclick="submitBulkRetry()">
+            <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+            Bulk Retry
+        </button>
         <button type="button" class="btn btn-sm" onclick="submitBulkResolve()">
             <i data-lucide="check-circle" style="width: 14px; height: 14px;"></i>
             Mark as Resolved
@@ -517,8 +622,7 @@
                     @forelse($failures as $failure)
                         <tr data-id="{{ $failure->id }}">
                             <td style="text-align: center;">
-                                <input type="checkbox" name="ids[]" value="{{ $failure->id }}"
-                                    class="row-checkbox failure-checkbox" onclick="updateBulkActions()">
+                                <input type="checkbox" name="ids[]" value="{{ $failure->id }}" class="row-checkbox failure-checkbox" onclick="updateBulkActions()">
                             </td>
                             <td>
                                 <a href="{{ route('queue-monitor.failures.show', $failure) }}" class="job-link">
@@ -528,7 +632,7 @@
                                     <div class="job-info">
                                         <div class="job-name">{{ $failure->job_name }}</div>
                                         <div class="job-meta">
-                                            @if($failure->occurrences_count > 1)
+                                            @if ($failure->occurrences_count > 1)
                                                 <span class="badge badge-info" style="font-size: 10px; padding: 2px 6px;">
                                                     {{ $failure->occurrences_count }} occurrences
                                                 </span>
@@ -572,7 +676,7 @@
                                     <i data-lucide="check-circle" class="empty-state-icon"></i>
                                     <div class="empty-state-title">No Failures Found</div>
                                     <div class="empty-state-text">
-                                        @if(request('unresolved') || request('search'))
+                                        @if (request('unresolved') || request('search'))
                                             No failures match your current filters. Try adjusting your search criteria.
                                         @else
                                             Your queues are running smoothly. No failed jobs have been recorded.
@@ -587,8 +691,14 @@
         </div>
     </form>
 
+    {{-- Hidden form for bulk retry --}}
+    <form method="post" action="{{ route('queue-monitor.failures.bulk-retry') }}" id="bulkRetryForm" style="display: none;">
+        @csrf
+        <div id="bulkRetryInputs"></div>
+    </form>
+
     {{-- Pagination --}}
-    @if($failures->hasPages())
+    @if ($failures->hasPages())
         <div class="pagination-wrapper">
             <div class="pagination-info">
                 Showing {{ $failures->firstItem() }} to {{ $failures->lastItem() }} of {{ $failures->total() }} results
@@ -613,20 +723,53 @@
         function applyFilters() {
             const searchInput = document.querySelector('.search-box input[name="search"]');
             const unresolvedCheckbox = document.querySelector('.filter-checkbox input');
+            const recurringCheckbox = document.querySelectorAll('.filter-checkbox input')[1];
 
             let url = new URL(window.location.href);
-            url.searchParams.delete('search');
-            url.searchParams.delete('unresolved');
-            url.searchParams.delete('page');
+            // Clear existing params
+            ['search', 'unresolved', 'recurring', 'queue', 'connection', 'environment', 'date_from', 'date_to', 'page'].forEach(p => {
+                url.searchParams.delete(p);
+            });
 
-            if (searchInput.value) {
+            if (searchInput?.value) {
                 url.searchParams.set('search', searchInput.value);
             }
-            if (unresolvedCheckbox.checked) {
+
+            if (unresolvedCheckbox?.checked) {
                 url.searchParams.set('unresolved', '1');
             }
 
+            if (recurringCheckbox?.checked) {
+                url.searchParams.set('recurring', '1');
+            }
+
+            // Advanced filters
+            const queue = document.getElementById('queueFilter')?.value;
+            const connection = document.getElementById('connectionFilter')?.value;
+            const environment = document.getElementById('environmentFilter')?.value;
+            const dateFrom = document.getElementById('dateFrom')?.value;
+            const dateTo = document.getElementById('dateTo')?.value;
+
+            if (queue) url.searchParams.set('queue', queue);
+            if (connection) url.searchParams.set('connection', connection);
+            if (environment) url.searchParams.set('environment', environment);
+            if (dateFrom) url.searchParams.set('date_from', dateFrom);
+            if (dateTo) url.searchParams.set('date_to', dateTo);
+
             window.location.href = url.toString();
+        }
+
+        // Toggle recurring filter
+        function toggleRecurring(label) {
+            label.classList.toggle('active');
+            const checkbox = label.querySelector('input');
+            checkbox.checked = !checkbox.checked;
+        }
+
+        // Clear all filters
+        function clearFilters() {
+            const baseUrl = window.location.pathname;
+            window.location.href = baseUrl;
         }
 
         // Toggle all checkboxes
@@ -666,6 +809,25 @@
         function submitBulkResolve() {
             const form = document.getElementById('bulkForm');
             form.submit();
+        }
+
+        // Submit bulk retry
+        function submitBulkRetry() {
+            const checked = document.querySelectorAll('.failure-checkbox:checked');
+            if (checked.length === 0) return;
+
+            const inputsContainer = document.getElementById('bulkRetryInputs');
+            inputsContainer.innerHTML = '';
+
+            checked.forEach(cb => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'ids[]';
+                input.value = cb.value;
+                inputsContainer.appendChild(input);
+            });
+
+            document.getElementById('bulkRetryForm').submit();
         }
 
         // Clear selection

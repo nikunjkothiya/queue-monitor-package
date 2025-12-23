@@ -47,6 +47,34 @@ return [
         // Auto-refresh interval in seconds for the dashboard (0 = disabled)
         'auto_refresh_seconds' => env('QUEUE_MONITOR_AUTO_REFRESH', 10),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Analytics Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure how recurring failures are detected and tracked.
+    |
+    */
+    'analytics' => [
+        // Number of failures in the window to mark as recurring
+        'recurring_threshold' => env('QUEUE_MONITOR_RECURRING_THRESHOLD', 3),
+        // Time window in hours for counting recurring failures
+        'recurring_window_hours' => env('QUEUE_MONITOR_RECURRING_WINDOW', 24),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure data export functionality.
+    |
+    */
+    'export' => [
+        // Maximum number of records per export
+        'max_records' => 10000,
+    ],
 ];
 
 
