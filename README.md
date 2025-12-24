@@ -214,6 +214,16 @@ Contributions are welcome! Please:
 2. Create a feature branch
 3. Submit a pull request
 
+## 💖 Support the Project
+
+If you find this project helpful and want to support its development, you can buy me a coffee!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20Me-orange.svg?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/nikunjkothiya)
+
+<img src="https://raw.githubusercontent.com/nikunjkothiya/assets/main/qr-code.png"
+     alt="Buy Me A Coffee QR Code"
+     width="180" />
+     
 ---
 
 ## 📄 License
