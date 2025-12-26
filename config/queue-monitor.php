@@ -21,22 +21,46 @@ return [
     */
     'middleware' => ['web'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Alert Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Email and Slack alerting with smart throttling and filtering.
+    |
+    */
     'alerts' => [
         'enabled' => env('QUEUE_MONITOR_ALERTS', true),
-        // Address to send email alerts to (defaults to app mail.from)
+        
+        // Email notifications
         'mail_to' => env('QUEUE_MONITOR_MAIL_TO'),
 
-        // Slack webhook URL for alerts
+        // Slack webhook URL
         'slack_webhook_url' => env('QUEUE_MONITOR_SLACK_WEBHOOK_URL'),
 
-        // Minimum number of failures in the window before sending an alert
+        // Minimum number of failures before sending an alert
         'min_failures_for_alert' => env('QUEUE_MONITOR_MIN_FAILURES', 1),
 
-        // Sliding time window (in minutes) to aggregate failures for alerting
+        // Sliding time window (in minutes) to aggregate failures
         'window_minutes' => env('QUEUE_MONITOR_WINDOW_MINUTES', 5),
 
-        // Do not send a new alert more often than this (in minutes)
+        // Per-group throttle: don't alert for same error more often than this
         'throttle_minutes' => env('QUEUE_MONITOR_THROTTLE_MINUTES', 5),
+        
+        // Global cooldown: minimum seconds between ANY alerts (prevents storms)
+        'global_cooldown_seconds' => env('QUEUE_MONITOR_GLOBAL_COOLDOWN', 30),
+        
+        // Minimum priority score to trigger alert (0-100, higher = more critical)
+        'min_priority_score' => env('QUEUE_MONITOR_MIN_PRIORITY', 0),
+        
+        // Only alert for these environments (null = all environments)
+        'environments' => null, // e.g., ['production', 'staging']
+        
+        // Only alert for these queues (null = all queues)
+        'only_queues' => null, // e.g., ['payments', 'critical']
+        
+        // Never alert for these queues
+        'except_queues' => [], // e.g., ['low-priority', 'batch']
     ],
 
     'retention_days' => 90,
@@ -44,8 +68,32 @@ return [
     'dashboard' => [
         'title' => 'Queue Monitor',
         'health_score_enabled' => true,
-        // Auto-refresh interval in seconds for the dashboard (0 = disabled)
         'auto_refresh_seconds' => env('QUEUE_MONITOR_AUTO_REFRESH', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Priority Configuration (Optional)
+    |--------------------------------------------------------------------------
+    |
+    | Priority is calculated AUTOMATICALLY based on:
+    | - Queue name keywords (payment, email, webhook, etc.)
+    | - Job class name keywords
+    | - Exception severity
+    | - Environment (production gets higher priority)
+    |
+    | You can optionally override with specific queue names below.
+    | Leave empty to use automatic detection (recommended).
+    |
+    */
+    'priority' => [
+        // Optional: Force these queues to critical priority (90+)
+        // Example: ['payments', 'billing']
+        'critical_queues' => [],
+        
+        // Optional: Force these queues to high priority (70+)
+        // Example: ['notifications', 'emails']
+        'high_queues' => [],
     ],
 
     /*
@@ -65,6 +113,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Custom Exception Patterns
+    |--------------------------------------------------------------------------
+    |
+    | Add your own exception patterns for domain-specific error recognition.
+    | These are merged with the built-in patterns.
+    |
+    */
+    'custom_patterns' => [
+        // Example:
+        // 'PaymentGatewayException' => [
+        //     'category' => 'Payment Error',
+        //     'icon' => 'credit-card',
+        //     'suggestions' => [
+        //         'Check payment gateway credentials',
+        //         'Verify API endpoint is accessible',
+        //         'Review transaction limits',
+        //     ],
+        // ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Export Settings
     |--------------------------------------------------------------------------
     |
@@ -72,9 +142,25 @@ return [
     |
     */
     'export' => [
-        // Maximum number of records per export
         'max_records' => 10000,
     ],
+    
+    /*
+    |--------------------------------------------------------------------------
+    | Performance Settings
+    |--------------------------------------------------------------------------
+    |
+    | Fine-tune performance for high-volume environments.
+    |
+    */
+    'performance' => [
+        // Use cache for recurring detection (recommended for high volume)
+        'use_cache_for_recurring' => true,
+        
+        // Cache driver for queue monitor data (null = default cache)
+        'cache_driver' => null,
+        
+        // Batch size for background analytics computation
+        'analytics_batch_size' => 1000,
+    ],
 ];
-
-
