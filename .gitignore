@@ -1,0 +1,55 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# IDE & Editors
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+/.phpunit.result.cache
+/.phpunit.cache/
+/coverage/
+.phpunit.result.cache
+
+# Build artifacts
+/build/
+/dist/
+
+# Sample App (for testing only)
+/sample-app/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Composer
+composer.lock
+composer.phar
+
+# Cache
+*.cache
+.php_cs.cache
+.php-cs-fixer.cache

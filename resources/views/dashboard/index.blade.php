@@ -224,63 +224,6 @@
             position: relative;
         }
 
-        /* Driver Cards */
-        .drivers-section {
-            margin-bottom: 32px;
-        }
-
-        .drivers-title {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .drivers-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-        }
-
-        @media (max-width: 768px) {
-            .drivers-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        .driver-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 16px 20px;
-            text-align: center;
-            transition: all var(--transition-fast);
-        }
-
-        .driver-card:hover {
-            border-color: var(--accent-primary);
-            transform: translateY(-2px);
-        }
-
-        .driver-card.active {
-            border-color: var(--success);
-            background: var(--success-bg);
-        }
-
-        .driver-name {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-
-        .driver-subtitle {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
         /* Bottom Grid */
         .bottom-grid {
             display: grid;
@@ -436,6 +379,46 @@
             font-weight: 600;
             margin-left: auto;
         }
+        
+        /* Help Tooltip */
+        .help-tooltip {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .help-tooltip:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            white-space: normal;
+            width: 220px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            z-index: 100;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .help-tooltip:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--border-color);
+            margin-bottom: -4px;
+            z-index: 101;
+        }
 
         /* Diagnostics */
         .diagnostics-item {
@@ -546,20 +529,6 @@
                 @endif
             </div>
             <div class="stat-sublabel">From failure to resolution</div>
-        </div>
-    </div>
-
-    {{-- Queue Drivers --}}
-    <div class="drivers-section">
-        <div class="drivers-title">Supported Queue Drivers</div>
-        <div class="drivers-grid">
-            @foreach ($queueDrivers as $driver)
-                <div
-                    class="driver-card {{ strtolower($queueDiagnostics['driver'] ?? '') === strtolower($driver['name']) ? 'active' : '' }}">
-                    <div class="driver-name">{{ $driver['name'] }}</div>
-                    <div class="driver-subtitle">{{ $driver['subtitle'] }}</div>
-                </div>
-            @endforeach
         </div>
     </div>
 
@@ -699,18 +668,27 @@
                 <div class="alert-config-item">
                     <i data-lucide="timer" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
                     <span class="alert-config-label">Cooldown</span>
+                    <span class="help-tooltip" title="Minimum time between alerts for the same error. Prevents alert spam when the same job fails repeatedly.">
+                        <i data-lucide="help-circle" style="width: 14px; height: 14px; color: var(--text-muted); cursor: help;"></i>
+                    </span>
                     <span class="alert-config-value">{{ $alertConfig['throttle_minutes'] ?? 5 }} min</span>
                 </div>
 
                 <div class="alert-config-item">
                     <i data-lucide="clock" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
                     <span class="alert-config-label">Window</span>
+                    <span class="help-tooltip" title="Time window to count failures. If 'Min Failures' occur within this window, an alert is triggered.">
+                        <i data-lucide="help-circle" style="width: 14px; height: 14px; color: var(--text-muted); cursor: help;"></i>
+                    </span>
                     <span class="alert-config-value">{{ $alertConfig['window_minutes'] ?? 5 }} min</span>
                 </div>
 
                 <div class="alert-config-item">
                     <i data-lucide="alert-triangle" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
                     <span class="alert-config-label">Min Failures</span>
+                    <span class="help-tooltip" title="Minimum number of failures required within the Window period before sending an alert. Set to 1 for immediate alerts.">
+                        <i data-lucide="help-circle" style="width: 14px; height: 14px; color: var(--text-muted); cursor: help;"></i>
+                    </span>
                     <span class="alert-config-value">{{ $alertConfig['min_failures_for_alert'] ?? 1 }}</span>
                 </div>
 
@@ -718,12 +696,12 @@
                     <div class="text-sm font-semibold mb-3" style="color: var(--text-muted);">Queue Diagnostics</div>
 
                     <div class="diagnostics-item">
-                        <div class="diagnostics-label">Connection</div>
+                        <div class="diagnostics-label">Default Connection</div>
                         <div class="diagnostics-value">{{ $queueDiagnostics['default'] ?? 'not set' }}</div>
                     </div>
 
                     <div class="diagnostics-item">
-                        <div class="diagnostics-label">Driver</div>
+                        <div class="diagnostics-label">Default Driver</div>
                         <div class="diagnostics-value">{{ $queueDiagnostics['driver'] ?? 'unknown' }}</div>
                     </div>
 

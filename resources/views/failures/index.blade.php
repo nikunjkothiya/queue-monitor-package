@@ -38,19 +38,18 @@
 
         .search-box {
             position: relative;
-            flex: 1;
-            min-width: 280px;
-            max-width: 400px;
+            min-width: 180px;
+            max-width: 250px;
         }
 
         .search-box input {
             width: 100%;
-            padding: 12px 16px 12px 44px;
-            background: var(--bg-card);
+            padding: 8px 12px 8px 36px;
+            background: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-sm);
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
             transition: all var(--transition-fast);
         }
 
@@ -59,13 +58,19 @@
             border-color: var(--accent-primary);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
         }
+        
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
 
-        .search-box i {
+        .search-box i,
+        .search-box svg {
             position: absolute;
-            left: 16px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted);
+            pointer-events: none;
         }
 
         .filter-group {
@@ -75,32 +80,49 @@
         }
 
         .filter-checkbox {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
+            gap: 6px;
+            padding: 8px 14px;
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 500;
             color: var(--text-secondary);
-            transition: all var(--transition-fast);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            user-select: none;
         }
 
         .filter-checkbox:hover {
-            border-color: var(--border-color-light);
+            border-color: var(--accent-primary);
             color: var(--text-primary);
+            background: var(--bg-tertiary);
         }
 
         .filter-checkbox.active {
             background: var(--accent-primary);
             border-color: var(--accent-primary);
             color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .filter-checkbox.active:hover {
+            background: var(--accent-secondary);
+            border-color: var(--accent-secondary);
         }
 
         .filter-checkbox input {
             display: none;
+        }
+        
+        .filter-checkbox i,
+        .filter-checkbox svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
         }
 
         /* Bulk Actions Bar */
@@ -338,47 +360,6 @@
             color: var(--text-muted);
         }
 
-        .pagination {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            list-style: none;
-        }
-
-        .pagination li a,
-        .pagination li span {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 36px;
-            height: 36px;
-            padding: 0 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            transition: all var(--transition-fast);
-        }
-
-        .pagination li a:hover {
-            background: var(--bg-tertiary);
-            border-color: var(--border-color-light);
-            color: var(--text-primary);
-        }
-
-        .pagination li.active span {
-            background: var(--accent-gradient);
-            border-color: transparent;
-            color: white;
-        }
-
-        .pagination li.disabled span {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         /* Empty State */
         .empty-state {
             text-align: center;
@@ -435,11 +416,6 @@
 
         /* Advanced Filters Styles */
         .advanced-filters {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
             padding: 16px;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -462,7 +438,10 @@
             border-radius: var(--radius-sm);
             color: var(--text-primary);
             font-size: 13px;
-            min-width: 140px;
+        }
+
+        .filter-select {
+            min-width: 130px;
         }
 
         .filter-select:focus,
@@ -472,12 +451,20 @@
         }
 
         .filter-input[type="date"] {
-            width: 140px;
+            width: 130px;
+        }
+
+        .filter-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 4px;
         }
 
         .export-group {
             display: flex;
             gap: 8px;
+            margin-left: auto;
         }
 
         .recurring-badge {
@@ -492,12 +479,19 @@
             font-weight: 600;
         }
 
-        @media (max-width: 768px) {
-            .advanced-filters {
-                flex-direction: column;
-                align-items: stretch;
+        @media (max-width: 1200px) {
+            .filter-divider {
+                display: none;
             }
+            
+            .export-group {
+                margin-left: 0;
+                width: 100%;
+                margin-top: 10px;
+            }
+        }
 
+        @media (max-width: 768px) {
             .filters-row {
                 flex-direction: column;
                 align-items: stretch;
@@ -506,6 +500,14 @@
             .filter-select,
             .filter-input {
                 width: 100%;
+            }
+            
+            .search-box {
+                max-width: none;
+            }
+            
+            .filter-checkbox {
+                justify-content: center;
             }
         }
     </style>
@@ -537,6 +539,27 @@
     {{-- Advanced Filters --}}
     <div class="advanced-filters" id="advancedFilters">
         <div class="filters-row">
+            {{-- Search Box --}}
+            <div class="search-box">
+                <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                <input type="text" name="search" placeholder="Search job name..." value="{{ request('search') }}">
+            </div>
+
+            {{-- Quick Filter Checkboxes --}}
+            <label class="filter-checkbox {{ request('unresolved') ? 'active' : '' }}" onclick="toggleFilter(this)">
+                <input type="checkbox" name="unresolved" {{ request('unresolved') ? 'checked' : '' }}>
+                <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
+                <span>Unresolved</span>
+            </label>
+
+            <label class="filter-checkbox {{ request('recurring') ? 'active' : '' }}" onclick="toggleRecurring(this)">
+                <input type="checkbox" name="recurring" {{ request('recurring') ? 'checked' : '' }}>
+                <i data-lucide="repeat" style="width: 14px; height: 14px;"></i>
+                <span>Recurring</span>
+            </label>
+            
+            <div class="filter-divider"></div>
+
             <select name="queue" id="queueFilter" class="filter-select">
                 <option value="">All Queues</option>
                 @foreach ($filterOptions['queues'] ?? [] as $queue)
@@ -558,29 +581,29 @@
                 @endforeach
             </select>
 
-            <input type="date" name="date_from" id="dateFrom" class="filter-input" value="{{ request('date_from') }}" placeholder="From Date">
-            <input type="date" name="date_to" id="dateTo" class="filter-input" value="{{ request('date_to') }}" placeholder="To Date">
+            <input type="date" name="date_from" id="dateFrom" class="filter-input" value="{{ request('date_from') }}" title="From Date">
+            <input type="date" name="date_to" id="dateTo" class="filter-input" value="{{ request('date_to') }}" title="To Date">
 
-            <button type="button" class="btn btn-secondary btn-sm" onclick="applyFilters()">
+            <button type="button" class="btn btn-primary btn-sm" onclick="applyFilters()">
                 <i data-lucide="filter" style="width: 14px; height: 14px;"></i>
-                Apply Filters
+                Apply
             </button>
 
             <button type="button" class="btn btn-ghost btn-sm" onclick="clearFilters()">
                 <i data-lucide="x" style="width: 14px; height: 14px;"></i>
                 Clear
             </button>
-        </div>
-
-        <div class="export-group">
-            <a href="{{ route('queue-monitor.failures.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="btn btn-ghost btn-sm">
-                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
-                Export CSV
-            </a>
-            <a href="{{ route('queue-monitor.failures.export', array_merge(request()->query(), ['format' => 'json'])) }}" class="btn btn-ghost btn-sm">
-                <i data-lucide="download" style="width: 14px; height: 14px;"></i>
-                Export JSON
-            </a>
+            
+            <div class="export-group">
+                <a href="{{ route('queue-monitor.failures.export', array_merge(request()->query(), ['format' => 'csv'])) }}" class="btn btn-ghost btn-sm" title="Export as CSV">
+                    <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                    CSV
+                </a>
+                <a href="{{ route('queue-monitor.failures.export', array_merge(request()->query(), ['format' => 'json'])) }}" class="btn btn-ghost btn-sm" title="Export as JSON">
+                    <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+                    JSON
+                </a>
+            </div>
         </div>
     </div>
 
@@ -703,9 +726,7 @@
             <div class="pagination-info">
                 Showing {{ $failures->firstItem() }} to {{ $failures->lastItem() }} of {{ $failures->total() }} results
             </div>
-            <nav>
-                {{ $failures->withQueryString()->links() }}
-            </nav>
+            {{ $failures->withQueryString()->links('queue-monitor::components.pagination') }}
         </div>
     @endif
 @endsection
@@ -714,16 +735,23 @@
     <script>
         // Toggle filter checkbox
         function toggleFilter(label) {
-            label.classList.toggle('active');
             const checkbox = label.querySelector('input');
             checkbox.checked = !checkbox.checked;
+            label.classList.toggle('active', checkbox.checked);
+        }
+
+        // Toggle recurring filter
+        function toggleRecurring(label) {
+            const checkbox = label.querySelector('input');
+            checkbox.checked = !checkbox.checked;
+            label.classList.toggle('active', checkbox.checked);
         }
 
         // Apply filters
         function applyFilters() {
             const searchInput = document.querySelector('.search-box input[name="search"]');
-            const unresolvedCheckbox = document.querySelector('.filter-checkbox input');
-            const recurringCheckbox = document.querySelectorAll('.filter-checkbox input')[1];
+            const unresolvedCheckbox = document.querySelector('.filter-checkbox input[name="unresolved"]');
+            const recurringCheckbox = document.querySelector('.filter-checkbox input[name="recurring"]');
 
             let url = new URL(window.location.href);
             // Clear existing params
@@ -757,13 +785,6 @@
             if (dateTo) url.searchParams.set('date_to', dateTo);
 
             window.location.href = url.toString();
-        }
-
-        // Toggle recurring filter
-        function toggleRecurring(label) {
-            label.classList.toggle('active');
-            const checkbox = label.querySelector('input');
-            checkbox.checked = !checkbox.checked;
         }
 
         // Clear all filters
@@ -839,6 +860,16 @@
             document.getElementById('selectAll').checked = false;
             updateBulkActions();
         }
+
+        // Initialize filter checkbox states on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.filter-checkbox').forEach(label => {
+                const checkbox = label.querySelector('input');
+                if (checkbox && checkbox.checked) {
+                    label.classList.add('active');
+                }
+            });
+        });
 
         // Re-initialize icons
         lucide.createIcons();

@@ -221,13 +221,14 @@ class FailureController extends Controller
             return back()->with('queue-monitor.error', 'Unable to reconstruct job from payload.');
         }
 
-        Bus::dispatch($job);
+        // Dispatch to the ORIGINAL connection and queue
+        $this->dispatchJobToOriginalQueue($job, $failure);
 
         // Track retry
         $failure->increment('retry_count');
         $failure->update(['last_retried_at' => now()]);
 
-        return back()->with('queue-monitor.success', 'Job has been re-dispatched. Retry count: ' . $failure->retry_count);
+        return back()->with('queue-monitor.success', 'Job has been re-dispatched to ' . ($failure->queue ?? 'default') . ' queue. Retry count: ' . $failure->retry_count);
     }
 
     public function resolve(ResolveFailureRequest $request, QueueFailure $failure): RedirectResponse
@@ -329,7 +330,8 @@ class FailureController extends Controller
         }
 
         try {
-            Bus::dispatch($job);
+            // Dispatch to the ORIGINAL connection and queue
+            $this->dispatchJobToOriginalQueue($job, $failure);
         } catch (\Throwable $e) {
             return back()->with('queue-monitor.error', 'Failed to dispatch job: ' . $e->getMessage());
         }
@@ -343,7 +345,7 @@ class FailureController extends Controller
             'retried_by' => $request->user()?->getKey(),
         ]);
 
-        return back()->with('queue-monitor.success', 'Job has been re-dispatched with modified data. Retry count: ' . $failure->retry_count);
+        return back()->with('queue-monitor.success', 'Job has been re-dispatched with modified data to ' . ($failure->queue ?? 'default') . ' queue. Retry count: ' . $failure->retry_count);
     }
 
     /**
@@ -375,7 +377,8 @@ class FailureController extends Controller
             }
 
             try {
-                Bus::dispatch($job);
+                // Dispatch to the ORIGINAL connection and queue
+                $this->dispatchJobToOriginalQueue($job, $failure);
                 
                 $failure->increment('retry_count');
                 $failure->update([
@@ -401,6 +404,28 @@ class FailureController extends Controller
         }
         
         return back()->with('queue-monitor.warning', $message);
+    }
+    
+    /**
+     * Dispatch a job to its original connection and queue.
+     * This ensures the job runs on the same driver it originally failed on.
+     */
+    protected function dispatchJobToOriginalQueue(mixed $job, QueueFailure $failure): void
+    {
+        $connection = $failure->connection;
+        $queue = $failure->queue;
+        
+        // Method 1: If job has onConnection/onQueue methods (Laravel's Queueable trait)
+        if (method_exists($job, 'onConnection') && $connection) {
+            $job = $job->onConnection($connection);
+        }
+        
+        if (method_exists($job, 'onQueue') && $queue) {
+            $job = $job->onQueue($queue);
+        }
+        
+        // Dispatch the job
+        Bus::dispatch($job);
     }
 
     /**
@@ -439,19 +464,51 @@ class FailureController extends Controller
             $reflection = new \ReflectionClass($job);
             $properties = [];
 
+            // Complete list of Laravel internal queue properties that shouldn't be edited
+            $internalProperties = [
+                // Core queue properties
+                'job', 'connection', 'queue', 'delay', 'middleware', 
+                // Chain properties
+                'chainConnection', 'chainQueue', 'chained', 'chainCatchCallbacks',
+                // Retry/failure properties  
+                'tries', 'maxExceptions', 'backoff', 'timeout', 'failOnTimeout', 'retryUntil',
+                // Batch properties
+                'batchId',
+                // SQS FIFO properties
+                'messageGroup', 'deduplicator',
+                // Transaction properties
+                'afterCommit',
+                // Encryption
+                'shouldBeEncrypted',
+                // Unique job properties
+                'uniqueId', 'uniqueFor', 'uniqueVia',
+                // Rate limiting
+                'rateLimiter', 'rateLimiterKey',
+                // Other internal
+                'deleteWhenMissingModels',
+            ];
+
             foreach ($reflection->getProperties() as $property) {
-                // Skip internal Laravel properties that shouldn't be edited manually
-                if (in_array($property->getName(), ['job', 'connection', 'queue', 'chainConnection', 'chainQueue', 'delay', 'middleware', 'chained'])) {
+                $propertyName = $property->getName();
+                
+                // Skip internal Laravel properties
+                if (in_array($propertyName, $internalProperties)) {
                     continue;
                 }
 
                 $property->setAccessible(true);
-                $value = $property->getValue($job);
+                
+                try {
+                    $value = $property->getValue($job);
+                } catch (\Throwable) {
+                    // Skip uninitialized properties
+                    continue;
+                }
 
                 // We only want to expose scalar values or simple arrays for editing
                 // Complex objects might be too hard to edit via simple UI
-                if (is_scalar($value) || is_array($value) || is_null($value)) {
-                    $properties[$property->getName()] = $value;
+                if (is_scalar($value) || (is_array($value) && $this->isSimpleArray($value)) || is_null($value)) {
+                    $properties[$propertyName] = $value;
                 }
             }
 
@@ -459,6 +516,22 @@ class FailureController extends Controller
         } catch (\Throwable) {
             return null;
         }
+    }
+    
+    /**
+     * Check if an array contains only scalar values (no nested objects).
+     */
+    protected function isSimpleArray(array $array): bool
+    {
+        foreach ($array as $value) {
+            if (is_object($value)) {
+                return false;
+            }
+            if (is_array($value) && !$this->isSimpleArray($value)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected function getJobClass(?string $payload): ?string
@@ -486,11 +559,40 @@ class FailureController extends Controller
             if ($reflection->hasProperty($key)) {
                 $property = $reflection->getProperty($key);
                 $property->setAccessible(true);
-                $property->setValue($job, $value);
+                
+                // Get the original value to determine expected type
+                $originalValue = $property->getValue($job);
+                $coercedValue = $this->coercePropertyValue($value, $originalValue);
+                
+                $property->setValue($job, $coercedValue);
             }
         }
 
         return $job;
+    }
+    
+    /**
+     * Coerce a value to match the type of the original property value.
+     */
+    protected function coercePropertyValue(mixed $newValue, mixed $originalValue): mixed
+    {
+        // If new value is null, return null
+        if ($newValue === null) {
+            return null;
+        }
+        
+        // Determine target type from original value
+        $targetType = gettype($originalValue);
+        
+        return match ($targetType) {
+            'integer' => (int) $newValue,
+            'double' => (float) $newValue,
+            'boolean' => is_bool($newValue) ? $newValue : filter_var($newValue, FILTER_VALIDATE_BOOLEAN),
+            'string' => (string) $newValue,
+            'array' => is_array($newValue) ? $newValue : [$newValue],
+            'NULL' => $newValue, // Keep as-is if original was null
+            default => $newValue, // For objects and other types, keep as-is
+        };
     }
 }
 

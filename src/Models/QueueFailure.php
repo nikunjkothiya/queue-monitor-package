@@ -24,6 +24,7 @@ class QueueFailure extends Model
         'payload',
         'exception_class',
         'exception_message',
+        'exception_context',
         'file',
         'line',
         'stack_trace',
@@ -36,8 +37,8 @@ class QueueFailure extends Model
         'resolved_by',
         'retry_count',
         'last_retried_at',
-        // New fields for enhanced features
         'is_recurring',
+        'priority_score',
         'modified_payload',
         'retried_by',
         'retry_notes',
@@ -48,6 +49,8 @@ class QueueFailure extends Model
         'resolved_at' => 'datetime',
         'last_retried_at' => 'datetime',
         'is_recurring' => 'boolean',
+        'exception_context' => 'array',
+        'priority_score' => 'integer',
     ];
 
     protected static function booted(): void
@@ -94,11 +97,81 @@ class QueueFailure extends Model
     }
 
     /**
+     * Scope to filter by minimum priority score.
+     */
+    public function scopeCritical(Builder $query, int $minScore = 80): Builder
+    {
+        return $query->where('priority_score', '>=', $minScore);
+    }
+
+    /**
+     * Scope to filter high priority failures.
+     */
+    public function scopeHighPriority(Builder $query): Builder
+    {
+        return $query->where('priority_score', '>=', 60);
+    }
+
+    /**
+     * Scope to order by priority (highest first).
+     */
+    public function scopeByPriority(Builder $query): Builder
+    {
+        return $query->orderByDesc('priority_score')->orderByDesc('failed_at');
+    }
+
+    /**
      * Get the user who retried this job.
      */
     public function retrier(): BelongsTo
     {
         return $this->belongsTo(config('auth.providers.users.model'), 'retried_by');
+    }
+
+    /**
+     * Check if this failure is critical priority.
+     */
+    public function isCritical(): bool
+    {
+        return ($this->priority_score ?? 50) >= 80;
+    }
+
+    /**
+     * Check if this failure is high priority.
+     */
+    public function isHighPriority(): bool
+    {
+        return ($this->priority_score ?? 50) >= 60;
+    }
+
+    /**
+     * Get priority label for display.
+     */
+    public function getPriorityLabel(): string
+    {
+        $score = $this->priority_score ?? 50;
+        
+        return match (true) {
+            $score >= 80 => 'Critical',
+            $score >= 60 => 'High',
+            $score >= 40 => 'Medium',
+            default => 'Low',
+        };
+    }
+
+    /**
+     * Get priority color for UI.
+     */
+    public function getPriorityColor(): string
+    {
+        $score = $this->priority_score ?? 50;
+        
+        return match (true) {
+            $score >= 80 => 'red',
+            $score >= 60 => 'orange',
+            $score >= 40 => 'yellow',
+            default => 'gray',
+        };
     }
 }
 

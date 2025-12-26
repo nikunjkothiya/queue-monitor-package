@@ -392,12 +392,21 @@ class SmartInsightsService
             'similar_pattern' => null,
             'auto_fix_available' => false,
             'quick_actions' => [],
-            'confidence' => 'low', // Added confidence level
+            'confidence' => 'low',
+            'priority_score' => $failure->priority_score ?? 50,
+            'priority_label' => $failure->getPriorityLabel(),
         ];
 
+        // 0. Check custom patterns from config first (highest priority)
+        $customMatch = $this->detectCustomPatterns($failure);
+        if ($customMatch) {
+            $insights['category'] = $customMatch['category'];
+            $insights['icon'] = $customMatch['icon'];
+            $insights['suggestions'] = $customMatch['suggestions'];
+            $insights['confidence'] = 'high';
+        }
         // 1. Check for specific Laravel/PHP exceptions (High Confidence)
-        $laravelMatch = $this->detectLaravelExceptions($failure);
-        if ($laravelMatch) {
+        elseif ($laravelMatch = $this->detectLaravelExceptions($failure)) {
             $insights['category'] = $laravelMatch['category'];
             $insights['icon'] = $laravelMatch['icon'];
             $insights['suggestions'] = $laravelMatch['suggestions'];
@@ -421,6 +430,11 @@ class SmartInsightsService
             $insights['suggestions'],
             $this->getContextualSuggestions($failure)
         );
+        
+        // Add exception context if available
+        if ($failure->exception_context) {
+            $insights['exception_context'] = $failure->exception_context;
+        }
 
         // Find similar resolved failures for learning
         $insights['similar_pattern'] = $this->findSimilarResolvedFailure($failure);
@@ -429,6 +443,35 @@ class SmartInsightsService
         $insights['quick_actions'] = $this->getQuickActions($failure);
 
         return $insights;
+    }
+
+    /**
+     * Detect custom patterns from config.
+     */
+    protected function detectCustomPatterns(QueueFailure $failure): ?array
+    {
+        $customPatterns = config('queue-monitor.custom_patterns', []);
+        
+        if (empty($customPatterns)) {
+            return null;
+        }
+        
+        $searchText = $failure->exception_message . ' ' . $failure->exception_class;
+        
+        foreach ($customPatterns as $pattern => $info) {
+            // Check if pattern matches exception class exactly
+            if ($failure->exception_class === $pattern || 
+                str_contains($failure->exception_class, $pattern)) {
+                return $info;
+            }
+            
+            // Check if pattern matches as regex
+            if (@preg_match("/$pattern/i", $searchText)) {
+                return $info;
+            }
+        }
+        
+        return null;
     }
 
     /**

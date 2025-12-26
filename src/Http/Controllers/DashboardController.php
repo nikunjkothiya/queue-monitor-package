@@ -32,25 +32,6 @@ class DashboardController extends Controller
         $resolutionRate = $this->analytics->resolutionRate($days);
         $avgResolutionSeconds = $this->analytics->averageResolutionSeconds($days);
 
-        $queueDrivers = [
-            [
-                'name' => 'Redis',
-                'subtitle' => 'In-memory',
-            ],
-            [
-                'name' => 'Database',
-                'subtitle' => 'MySQL, Postgres',
-            ],
-            [
-                'name' => 'SQS',
-                'subtitle' => 'Amazon',
-            ],
-            [
-                'name' => 'Sync',
-                'subtitle' => 'Development',
-            ],
-        ];
-
         $alertConfig = config('queue-monitor.alerts');
         $queueDiagnostics = $this->diagnostics->summarize();
         $autoRefreshSeconds = (int) config('queue-monitor.dashboard.auto_refresh_seconds', 10);
@@ -65,7 +46,6 @@ class DashboardController extends Controller
             'resolutionRate' => $resolutionRate,
             'avgResolutionSeconds' => $avgResolutionSeconds,
             'daysWindow' => $days,
-            'queueDrivers' => $queueDrivers,
             'alertConfig' => $alertConfig,
             'queueDiagnostics' => $queueDiagnostics,
             'autoRefreshSeconds' => $autoRefreshSeconds,

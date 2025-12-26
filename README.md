@@ -1,102 +1,64 @@
-# Laravel Queue Monitor : Free Queue Monitoring Package
+# Laravel Queue Monitor
 
-<p align="center">
-  <strong>Self-hosted queue failure monitoring and analytics dashboard for Laravel 11+ applications.</strong>
-</p>
-
-<p align="center">
-  A premium, modern queue monitoring solution with dark mode, real-time dashboard, and intelligent alerting.
-</p>
+A self-hosted queue failure monitoring dashboard for Laravel 10, 11 & 12 applications.
 
 ---
 
 ## ✨ Features
 
-### 🧠 Smart Insights (Expanded)
-> **Intelligent failure analysis!**
-- **Comprehensive Pattern Recognition** – Detects 30+ specific failure types including:
-  - **Laravel Specifics**: `ModelNotFound`, `ValidationException`, `MassAssignment`, `RelationNotFound`.
-  - **Database**: Deadlocks, Connection Refused, "Gone Away", Integrity violations.
-  - **System**: Memory exhaustion, Disk full, File permissions.
-  - **External**: DNS errors, SSL issues, Timeouts, Rate Limits (429).
-- **Severity Scoring** – Critical/High/Medium/Low priority based on impact and recurrence.
-- **Actionable Suggestions** – Context-aware fix recommendations for each error type.
-- **Learn from History** – Shows how similar failures were resolved before.
-- **Quick Actions** – One-click copy error, retry, and resolve.
+### 🧠 Smart Insights
+- **30+ Exception Patterns** – Automatically detects and categorizes failures (ModelNotFound, Deadlocks, Timeouts, Rate Limits, etc.)
+- **Severity Scoring** – Critical/High/Medium/Low based on impact
+- **Actionable Suggestions** – Context-aware fix recommendations
+- **Historical Learning** – Shows how similar failures were resolved
 
 ### 🔄 Smart Retry with Payload Editor
-- **Remote Retry** – Re-dispatch failed jobs directly from the dashboard.
-- **Smart Property Editor** – Edit job properties (IDs, strings, booleans) with a user-friendly UI.
-- **Raw JSON Editor** – Advanced mode to edit the full raw payload.
-- **Syntax Validation** – Real-time JSON validation with error highlighting.
-- **Audit Trail** – Track who retried with what modifications.
-
-### 🚀 Bulk Operations 
-- **Bulk Retry** – Re-dispatch multiple failed jobs at once.
-- **Bulk Resolve** – Mark multiple failures as resolved.
-- **Select All** – Quickly select all visible failures.
-
-### 🔍 Advanced Filters 
-- **Filter by Queue** – Isolate failures from specific queues.
-- **Filter by Connection** – Database, Redis, SQS, etc.
-- **Filter by Environment** – Production, staging, local.
-- **Date Range** – Filter by failure date.
-- **Recurring Only** – Show only recurring failure patterns.
-
-### 📤 Export Functionality 
-- **CSV Export** – Download failures as spreadsheet.
-- **JSON Export** – Machine-readable format for automation.
-- **Filter-aware** – Export respects current filter selections.
-
-### 🎨 Modern Dashboard
-- **Dark/Light Mode** – Toggle between themes with localStorage persistence.
-- **Glassmorphism UI** – Premium card designs with modern aesthetics.
-- **Health Score Ring** – Animated gauge showing overall queue health (0-100).
-- **Real-time Charts** – Beautiful area charts for failures over time.
-- **Auto-refresh** – Configurable dashboard refresh with countdown indicator.
+- **Edit & Retry** – Modify job properties before retrying (fix IDs, emails, etc.)
+- **Smart Property Editor** – User-friendly UI for editing job properties
+- **Raw JSON Editor** – Advanced mode for full payload editing
+- **Correct Queue Dispatch** – Jobs retry on their ORIGINAL connection and queue
+- **Audit Trail** – Track who retried with what modifications
 
 ### 🚨 Smart Alert Throttling
-- **Email + Slack Alerts** – Multi-channel notifications on failure bursts.
-- **Sliding Window** – Count failures in configurable time windows.
-- **Cooldown Period** – Prevent alert spam during incidents.
-- **Environment Filtering** – Alert only in specific environments.
+- **Email + Slack** – Multi-channel notifications
+- **Cooldown** – Minimum time between alerts for same error (prevents spam)
+- **Window** – Time window to count failures before alerting
+- **Min Failures** – Require X failures before sending alert
+- **Queue-Specific Rules** – Alert only for specific queues
+- **Priority-Based** – Only alert for high-priority failures
+
+### 🎯 Automatic Priority Detection
+- **Zero Configuration** – Priority detected automatically from queue name, job class, and exception type
+- **50+ Keywords** recognized (payment, billing, email, webhook, sync, etc.)
+
+### 🔍 Filters & Export
+- Filter by Queue, Connection, Environment, Date Range
+- Export to CSV or JSON
+
+---
+
+## 📦 Requirements
+
+- PHP 8.1+
+- Laravel 10.x, 11.x, or 12.x
 
 ---
 
 ## 📦 Installation
 
-### 1. Require the Package
-
-Until published on Packagist, install directly from GitHub. Add to your `composer.json`:
-
-```json
-{
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/nikunjkothiya/queue-monitor-package"
-    }
-  ]
-}
-```
-
-Then require the package:
+### 1. Install via Composer
 
 ```bash
-composer require nikunjkothiya/laravel-queue-monitor:dev-main
+composer require nikunjkothiya/laravel-queue-monitor
 ```
 
 ### 2. Run Migrations
-
-The package automatically registers its migrations. Just run:
 
 ```bash
 php artisan migrate
 ```
 
 ### 3. Publish Configuration (Optional)
-
-To customize the dashboard, alerts, or middleware:
 
 ```bash
 php artisan vendor:publish --tag=queue-monitor-config
@@ -106,103 +68,139 @@ php artisan vendor:publish --tag=queue-monitor-config
 
 ## ⚙️ Configuration
 
-After publishing, customize `config/queue-monitor.php`:
+### Environment Variables
+
+```env
+# Enable/disable monitoring
+QUEUE_MONITOR_ENABLED=true
+
+# Email notifications
+QUEUE_MONITOR_MAIL_TO=devops@example.com
+
+# Slack notifications
+QUEUE_MONITOR_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
+
+# Alert throttling
+QUEUE_MONITOR_MIN_FAILURES=1        # Minimum failures before alerting
+QUEUE_MONITOR_WINDOW_MINUTES=5      # Time window to count failures
+QUEUE_MONITOR_THROTTLE_MINUTES=5    # Cooldown between alerts for same error
+
+# Dashboard
+QUEUE_MONITOR_AUTO_REFRESH=10       # Auto-refresh seconds (0 = disabled)
+```
+
+### Full Configuration
 
 ```php
+// config/queue-monitor.php
 return [
-    // Enable/disable the package globally
     'enabled' => env('QUEUE_MONITOR_ENABLED', true),
-
-    // Dashboard URL prefix
     'route_prefix' => 'queue-monitor',
+    'middleware' => ['web'],  // Add 'auth' for protected access
 
-    // Route middleware - controlled entirely by this config
-    'middleware' => ['web', 'auth'], 
-
-    // Alert settings
     'alerts' => [
         'enabled' => env('QUEUE_MONITOR_ALERTS', true),
         'mail_to' => env('QUEUE_MONITOR_MAIL_TO'),
         'slack_webhook_url' => env('QUEUE_MONITOR_SLACK_WEBHOOK_URL'),
+        
+        // Throttling
         'min_failures_for_alert' => env('QUEUE_MONITOR_MIN_FAILURES', 1),
         'window_minutes' => env('QUEUE_MONITOR_WINDOW_MINUTES', 5),
         'throttle_minutes' => env('QUEUE_MONITOR_THROTTLE_MINUTES', 5),
+        
+        // Filters
+        'min_priority_score' => 0,
+        'only_queues' => null,
+        'except_queues' => [],
+        'environments' => null,
     ],
 
-    // Data retention
     'retention_days' => 90,
-
-    // Dashboard settings
+    
     'dashboard' => [
-        'title' => 'Queue Monitor',
-        'health_score_enabled' => true,
         'auto_refresh_seconds' => env('QUEUE_MONITOR_AUTO_REFRESH', 10),
     ],
 ];
-```
-
-### Environment Variables
-
-```env
-QUEUE_MONITOR_ENABLED=true
-
-# Alert notifications
-QUEUE_MONITOR_MAIL_TO=devops@example.com
-QUEUE_MONITOR_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/XXX/YYY/ZZZ
-
-# Alert throttling
-QUEUE_MONITOR_MIN_FAILURES=3
-QUEUE_MONITOR_WINDOW_MINUTES=5
-QUEUE_MONITOR_THROTTLE_MINUTES=5
-
-# Dashboard auto-refresh (seconds, 0 = disabled)
-QUEUE_MONITOR_AUTO_REFRESH=10
 ```
 
 ---
 
 ## 🔒 Authorization
 
-To protect the dashboard, simply add the `auth` middleware to the config:
+Protect the dashboard:
 
 ```php
 // config/queue-monitor.php
-'middleware' => ['web', 'auth', 'queue-monitor'],
+'middleware' => ['web', 'auth'],
 ```
 
-Then define the `viewQueueMonitor` gate in your `AppServiceProvider` or `AuthServiceProvider`:
+For role-based access:
 
 ```php
-use Illuminate\Support\Facades\Gate;
+// AppServiceProvider.php
+Gate::define('viewQueueMonitor', fn ($user) => $user->is_admin);
 
-public function boot(): void
-{
-    Gate::define('viewQueueMonitor', fn ($user) => $user->is_admin);
-}
+// config/queue-monitor.php
+'middleware' => ['web', 'auth', 'can:viewQueueMonitor'],
 ```
 
 ---
 
-## 📖 Usage
+## 🚀 Usage
 
 ### Dashboard
-Visit `https://your-app.test/queue-monitor` to see the health score, charts, and recent failures.
 
-### Failure Detail & Smart Retry
-Click any failure to see the "Smart Insights" analysis.
-- **Retry**: Click "Retry" to re-dispatch immediately.
-- **Edit & Retry**: Use the "Smart Editor" to modify job properties (e.g., fix a typo in an email address or ID) before retrying.
+Visit `/queue-monitor` to see health score, failure charts, and recent failures.
 
-### Artisan Commands
+### Retry Failed Jobs
 
-#### Prune Old Failures
+**Simple Retry:** Click "Retry Job" to re-dispatch to the original queue.
+
+**Edit & Retry:**
+1. Open "Edit Payload & Retry"
+2. Modify properties using Smart Editor or Raw JSON
+3. Click "Retry with Modified Data"
+
+Jobs dispatch to their **original connection and queue** (Redis, Database, SQS, etc.).
+
+---
+
+## 📊 How Alert Throttling Works
+
+| Setting | Description |
+|---------|-------------|
+| `min_failures_for_alert` | Number of failures required before sending alert |
+| `window_minutes` | Time window to count failures |
+| `throttle_minutes` | Cooldown - don't repeat alert for same error |
+
+**Example:** With `min_failures: 3`, `window: 5`, `throttle: 15`:
+- Alert when same error occurs 3+ times in 5 minutes
+- Don't repeat alert for that error for 15 minutes
+
+---
+
+## � Arttisan Commands
+
 ```bash
+# Prune old records
 php artisan queue-monitor:prune --days=90
+
+# Compute analytics
+php artisan queue-monitor:compute-analytics
 ```
 
-#### Compute Analytics
-```bash
-php artisan queue-monitor:compute-analytics
+### Scheduler Setup
+
+**Laravel 11+** (`routes/console.php`):
+```php
+Schedule::command('queue-monitor:compute-analytics')->everyFiveMinutes();
+Schedule::command('queue-monitor:prune --days=90')->daily();
+```
+
+**Laravel 10** (`app/Console/Kernel.php`):
+```php
+$schedule->command('queue-monitor:compute-analytics')->everyFiveMinutes();
+$schedule->command('queue-monitor:prune --days=90')->daily();
 ```
 
 ---
@@ -211,24 +209,28 @@ php artisan queue-monitor:compute-analytics
 
 Contributions are welcome! Please:
 1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 💖 Support the Project
+---
 
-If you find this project helpful and want to support its development, you can buy me a coffee!
+## 💖 Support
 
-[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support%20Me-orange.svg?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/nikunjkothiya)
+If this package helps you, consider supporting development:
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-Support-orange.svg?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/nikunjkothiya)
 
 <img src="https://raw.githubusercontent.com/nikunjkothiya/assets/main/qr-code.png"
      alt="Buy Me A Coffee QR Code"
      width="180" />
-     
+
 ---
 
 ## 📄 License
 
-This package is open-source software licensed under the **MIT license**.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 

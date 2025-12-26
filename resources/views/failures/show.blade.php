@@ -116,8 +116,9 @@
         /* Content Grid */
         .detail-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.5fr) minmax(400px, 1fr);
+            grid-template-columns: minmax(0, 1.5fr) minmax(350px, 1fr);
             gap: 24px;
+            align-items: start;
         }
 
         @media (max-width: 1024px) {
@@ -869,16 +870,27 @@
                                             <div class="smart-properties-grid" style="display: grid; gap: 10px;">
                                                 @foreach ($jobProperties as $key => $value)
                                                     <div class="form-group">
-                                                        <label for="prop_{{ $key }}" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">{{ $key }}</label>
+                                                        <label for="prop_{{ $key }}" style="font-size: 12px; font-weight: 600; color: var(--text-muted);">
+                                                            {{ $key }}
+                                                            @if (is_null($value))
+                                                                <span style="color: var(--warning); font-weight: normal;">(null)</span>
+                                                            @endif
+                                                        </label>
                                                         @if (is_bool($value))
-                                                            <select class="form-input property-input" data-key="{{ $key }}" style="width: 100%;">
+                                                            <select class="form-input property-input" data-key="{{ $key }}" data-type="boolean" style="width: 100%;">
                                                                 <option value="true" {{ $value ? 'selected' : '' }}>true</option>
                                                                 <option value="false" {{ !$value ? 'selected' : '' }}>false</option>
                                                             </select>
                                                         @elseif(is_array($value))
-                                                            <textarea class="form-input property-input" data-key="{{ $key }}" rows="2" style="font-family: monospace;">{{ json_encode($value) }}</textarea>
+                                                            <textarea class="form-input property-input" data-key="{{ $key }}" data-type="array" rows="2" style="font-family: monospace;">{{ json_encode($value, JSON_PRETTY_PRINT) }}</textarea>
+                                                        @elseif(is_int($value))
+                                                            <input type="number" class="form-input property-input" data-key="{{ $key }}" data-type="integer" value="{{ $value }}" step="1">
+                                                        @elseif(is_float($value))
+                                                            <input type="number" class="form-input property-input" data-key="{{ $key }}" data-type="float" value="{{ $value }}" step="any">
+                                                        @elseif(is_null($value))
+                                                            <input type="text" class="form-input property-input" data-key="{{ $key }}" data-type="null" value="" placeholder="null (leave empty to keep null)">
                                                         @else
-                                                            <input type="text" class="form-input property-input" data-key="{{ $key }}" value="{{ $value }}">
+                                                            <input type="text" class="form-input property-input" data-key="{{ $key }}" data-type="string" value="{{ $value }}">
                                                         @endif
                                                     </div>
                                                 @endforeach
@@ -919,7 +931,7 @@
 
                                     <label for="retry_notes" style="margin-top: 12px;">Retry Notes (optional)</label>
                                     <textarea name="retry_notes" id="retry_notes" rows="2" class="form-input" placeholder="What did you change?"></textarea>
-                                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;" onclick="prepareSmartSubmit()">
+                                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
                                         <i data-lucide="play" style="width: 16px; height: 16px;"></i>
                                         Retry with Modified Data
                                     </button>
@@ -1194,16 +1206,22 @@
             }, 5000);
         }
 
-        // Form validation before submit
+        // Form validation and preparation before submit
         document.getElementById('retryWithPayloadForm')?.addEventListener('submit', function(e) {
-            const editor = document.getElementById('payloadEditor');
-            if (!editor) return;
+            // IMPORTANT: Prepare smart editor data BEFORE form submits
+            prepareSmartSubmit();
+            
+            // Only validate raw JSON if we're in raw mode
+            if (document.getElementById('rawEditorPanel').style.display !== 'none') {
+                const editor = document.getElementById('payloadEditor');
+                if (!editor) return;
 
-            try {
-                JSON.parse(editor.value);
-            } catch (err) {
-                e.preventDefault();
-                showValidationMessage('Cannot submit: Invalid JSON - ' + err.message, 'invalid');
+                try {
+                    JSON.parse(editor.value);
+                } catch (err) {
+                    e.preventDefault();
+                    showValidationMessage('Cannot submit: Invalid JSON - ' + err.message, 'invalid');
+                }
             }
         });
 
@@ -1238,22 +1256,48 @@
                 const props = {};
                 document.querySelectorAll('.property-input').forEach(input => {
                     let val = input.value;
-                    // Handle booleans
-                    if (input.tagName === 'SELECT') {
-                        val = val === 'true';
+                    const key = input.dataset.key;
+                    const dataType = input.dataset.type || 'string';
+                    
+                    // Handle based on data-type attribute
+                    switch (dataType) {
+                        case 'boolean':
+                            val = val === 'true';
+                            break;
+                        case 'array':
+                            try {
+                                val = JSON.parse(val);
+                            } catch (e) {
+                                // Keep as string if not valid JSON
+                            }
+                            break;
+                        case 'integer':
+                            val = val === '' ? null : parseInt(val, 10);
+                            break;
+                        case 'float':
+                            val = val === '' ? null : parseFloat(val);
+                            break;
+                        case 'null':
+                            // If empty, keep as null; otherwise treat as string
+                            val = val === '' ? null : val;
+                            break;
+                        case 'string':
+                        default:
+                            // For text inputs, check if it looks like a number
+                            if (val !== '' && !isNaN(val) && val.trim() !== '') {
+                                if (Number.isInteger(parseFloat(val)) && !val.includes('.')) {
+                                    val = parseInt(val, 10);
+                                } else {
+                                    val = parseFloat(val);
+                                }
+                            }
+                            break;
                     }
-                    // Handle arrays/objects (JSON)
-                    else if (input.tagName === 'TEXTAREA') {
-                        try {
-                            val = JSON.parse(val);
-                        } catch (e) {
-                            // If invalid JSON, keep as string or maybe warn? 
-                            // For now, let's assume valid JSON or string.
-                        }
-                    }
-                    props[input.dataset.key] = val;
+                    
+                    props[key] = val;
                 });
                 document.getElementById('jobPropertiesInput').value = JSON.stringify(props);
+                console.log('Smart Editor properties:', props); // Debug log
             } else {
                 document.getElementById('jobPropertiesInput').value = '';
             }
