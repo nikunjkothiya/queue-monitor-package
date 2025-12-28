@@ -206,6 +206,7 @@ class FailureController extends Controller
             'insights' => $insights,
             'jobProperties' => $jobProperties,
             'jobClass' => $jobClass,
+            'autoRefresh' => false,
         ]);
     }
 

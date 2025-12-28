@@ -913,11 +913,12 @@
                     {{ app()->environment() }}
                 </div>
 
-                @if(config('queue-monitor.dashboard.auto_refresh_seconds', 0) > 0)
+                @if (config('queue-monitor.dashboard.auto_refresh_seconds', 0) > 0)
                     <div class="refresh-indicator" id="refreshIndicator" title="Auto Refresh">
                         <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
-                        <span id="refreshCountdown"
-                            class="text-xs">{{ config('queue-monitor.dashboard.auto_refresh_seconds') }}s</span>
+                        <span id="refreshCountdown" class="text-xs" data-auto-refresh="{{ $autoRefresh ?? true }}">
+                            {{ config('queue-monitor.dashboard.auto_refresh_seconds') }}s
+                        </span>
                     </div>
                 @endif
 
@@ -991,10 +992,11 @@
         }
 
         // Auto-refresh countdown
+        const countdownEl = document.getElementById('refreshCountdown');
+        const autoRefreshEnabled = countdownEl.dataset.autoRefresh === 'true' || countdownEl.dataset.autoRefresh === '1';
         const autoRefreshSeconds = {{ (int) config('queue-monitor.dashboard.auto_refresh_seconds', 0) }};
-        if (autoRefreshSeconds > 0) {
+        if (autoRefreshEnabled && autoRefreshSeconds > 0) {
             let countdown = autoRefreshSeconds;
-            const countdownEl = document.getElementById('refreshCountdown');
 
             setInterval(function () {
                 countdown--;
